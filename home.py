@@ -55,7 +55,7 @@ Email us at: ✉️ [managersclub2025@gmail.com](mailto:managersclub2025@gmail.c
 
     # Beta notice box
     st.info("""
-**Note:** Managers’ Club is currently in **beta phase**.  
+**Note:** Managers’ Lab is currently in **beta phase**.  
 Your suggestions and feedback help us improve the experience.  
 
 *(This is not a professional collaboration offer — just a way to gather insights from early users.)*
@@ -66,5 +66,5 @@ Your suggestions and feedback help us improve the experience.
 
 ## 🚀 Ready to take control?
 
-Start from the sidebar and explore what **Managers’ Club** can do for your business.
+Start from the sidebar and explore what **Managers’ Lab** can do for your business.
 """)
