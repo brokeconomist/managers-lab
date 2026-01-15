@@ -42,5 +42,5 @@ Start by exploring one of the financial tools from the menu — **Break-Even**, 
 
 📬 **Feedback & Collaboration**  
 We are in beta — your insights help improve the platform! Email us at:  
-✉️ [managersclub2025@gmail.com](mailto:managersclub2025@gmail.com)
+✉️ [brokeconomist@gmail.com](mailto:brokeconomist@gmail.com)
 """)
