@@ -125,3 +125,4 @@ Use this for promotional pricing or similar product line decisions.
             st.success(f"✅ Maximum acceptable sales drop for Product A: {format_percentage(result/100)}")
             st.info(f"ℹ️ Percentage of customers who will not buy anything: {format_percentage(no_purchase)}")
 
+
