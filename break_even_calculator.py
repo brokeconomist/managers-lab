@@ -1,134 +1,129 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 
-# --- Helper functions ---
-def parse_number_en(number_str):
-    """Convert string to float, English style (10.50, not 10,50)."""
-    return float(number_str)
+# ---------- Helpers ----------
+def parse_number_en(x):
+    return float(x)
 
-def format_number_en(number, decimals=2):
-    """Format number in English style 1234.56 -> 1,234.56"""
-    return f"{number:,.{decimals}f}"
+def format_number_en(x, d=2):
+    return f"{x:,.{d}f}"
 
-def format_percentage_en(number, decimals=1):
-    return f"{number*100:.{decimals}f}%"
+def format_percentage_en(x, d=1):
+    return f"{x*100:.{d}f}%"
 
-# --- Break-Even calculations ---
-def calculate_break_even_point(fixed_costs, price_per_unit, variable_cost_per_unit):
-    try:
-        if price_per_unit == variable_cost_per_unit:
-            return None
-        return fixed_costs / (price_per_unit - variable_cost_per_unit)
-    except ZeroDivisionError:
+# ---------- Core calculation ----------
+def calculate_break_even_engine(
+    old_price, new_price,
+    old_cost, new_cost,
+    investment_cost,
+    units_sold
+):
+    old_cm = old_price - old_cost
+    new_cm = new_price - new_cost
+
+    if old_cm <= 0 or new_cm <= 0:
         return None
 
-# --- Plot ---
-def plot_break_even_shift(price_per_unit, variable_cost, fixed_costs, bep_old, bep_new):
-    max_units = int(max(bep_old, bep_new) * 2) + 5
-    units = list(range(0, max_units))
-    revenue = [price_per_unit * u for u in units]
-    total_cost = [fixed_costs + variable_cost * u for u in units]
+    fixed_costs_old = old_cm * units_sold
+    fixed_costs_new = fixed_costs_old + investment_cost
 
-    fig, ax = plt.subplots()
-    ax.plot(units, revenue, label="Revenue")
-    ax.plot(units, total_cost, label="Total Cost")
-    ax.axvline(bep_old, linestyle="--", label="Current Break-Even")
-    ax.axvline(bep_new, linestyle="--", label="New Break-Even")
-    ax.set_xlabel("Units sold")
-    ax.set_ylabel("$")
-    ax.set_title("Break-Even Shift After Decision")
-    ax.legend()
-    st.pyplot(fig)
-    st.markdown("---")
+    old_bep = fixed_costs_old / old_cm
+    new_bep = fixed_costs_new / new_cm
 
-# --- Streamlit UI ---
-def show_break_even_calculator():
+    percent_change = (new_bep - old_bep) / old_bep
+    units_change = new_bep - old_bep
+
+    return old_bep, new_bep, percent_change, units_change
+
+# ---------- Plot ----------
+def plot_break_even(old_price, new_price, old_cost, new_cost, investment_cost, units_sold):
+    old_cm = old_price - old_cost
+    fixed_old = old_cm * units_sold
+    fixed_new = fixed_old + investment_cost
+
+    max_q = int(max(units_sold, fixed_new / max(new_price - new_cost, 0.01)) * 1.6)
+    x = list(range(0, max_q))
+
+    old_cost_line = [fixed_old + old_cost * q for q in x]
+    new_cost_line = [fixed_new + new_cost * q for q in x]
+    old_rev = [old_price * q for q in x]
+    new_rev = [new_price * q for q in x]
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(x, old_cost_line, "r--", label="Current cost structure")
+    plt.plot(x, new_cost_line, "r-", label="After decision")
+    plt.plot(x, old_rev, "g--", label="Current price")
+    plt.plot(x, new_rev, "g-", label="After decision")
+
+    plt.xlabel("Units sold")
+    plt.ylabel("$")
+    plt.title("Break-Even Impact of Your Decision")
+    plt.legend()
+    plt.grid(True)
+    st.pyplot(plt)
+
+# ---------- UI ----------
+def show_break_even_engine():
 
     st.header("🟢 Can you afford this decision?")
     st.markdown(
-        "Answer pricing or cost questions instantly — without spreadsheets.\n\n"
-        "Change the price or cost and see if your business model absorbs the decision."
+        "Answer pricing, cost or investment questions instantly — **without spreadsheets**.\n\n"
+        "If something does not apply, simply enter **0**."
     )
 
-    with st.form("break_even_form"):
-        fixed_costs_input = st.text_input(
-            "Monthly fixed costs you must cover ($)",
-            value="10000.00"
-        )
+    with st.form("break_even_engine"):
+        st.subheader("Current situation")
 
-        price_per_unit_input = st.text_input(
-            "Current selling price per unit ($)",
-            value="50.00"
-        )
+        old_price = st.text_input("Current selling price per unit ($)", "50")
+        old_cost = st.text_input("Current direct cost per unit ($)", "30")
+        units_sold = st.text_input("Units sold in a normal period", "1000")
 
-        variable_cost_per_unit_input = st.text_input(
-            "Direct cost per unit (materials, labor, delivery) ($)",
-            value="30.00"
-        )
+        st.subheader("Proposed decision")
 
-        new_price_per_unit_input = st.text_input(
-            "Proposed new selling price ($)",
-            value="50.00"
-        )
-
-        new_variable_cost_input = st.text_input(
-            "Proposed new direct cost per unit ($)",
-            value="30.00"
-        )
+        new_price = st.text_input("New selling price ($)", "50")
+        new_cost = st.text_input("New direct cost per unit ($)", "30")
+        investment_cost = st.text_input("One-off investment required ($)", "0")
 
         submitted = st.form_submit_button("Test the decision")
 
     if submitted:
         try:
-            fixed_costs = parse_number_en(fixed_costs_input)
-            price_per_unit = parse_number_en(price_per_unit_input)
-            variable_cost_per_unit = parse_number_en(variable_cost_per_unit_input)
-            new_price_per_unit = parse_number_en(new_price_per_unit_input)
-            new_variable_cost = parse_number_en(new_variable_cost_input)
-
-            bep_old = calculate_break_even_point(
-                fixed_costs, price_per_unit, variable_cost_per_unit
-            )
-            bep_new = calculate_break_even_point(
-                fixed_costs, new_price_per_unit, new_variable_cost
+            result = calculate_break_even_engine(
+                parse_number_en(old_price),
+                parse_number_en(new_price),
+                parse_number_en(old_cost),
+                parse_number_en(new_cost),
+                parse_number_en(investment_cost),
+                parse_number_en(units_sold),
             )
 
-            if bep_old is None or bep_new is None:
-                st.error("⚠️ Selling price must be higher than direct cost.")
+            if result is None:
+                st.error("Contribution margin must be positive.")
                 return
 
-            st.success(
-                f"Current break-even: {format_number_en(bep_old,0)} units"
-            )
-            st.success(
-                f"New break-even after decision: {format_number_en(bep_new,0)} units"
-            )
+            old_bep, new_bep, pct, delta_units = result
 
-            change_pct = (bep_new - bep_old) / bep_old
+            st.success(f"Current break-even: {format_number_en(old_bep,0)} units")
+            st.success(f"New break-even: {format_number_en(new_bep,0)} units")
 
-            if change_pct < 0.10:
-                st.success(
-                    f"🟢 Your business model absorbs this decision "
-                    f"({format_percentage_en(change_pct)} change)."
-                )
-            elif 0.10 <= change_pct <= 0.30:
-                st.warning(
-                    f"🟠 This decision requires a significant increase in sales volume "
-                    f"({format_percentage_en(change_pct)} change)."
-                )
+            st.markdown(f"- Extra units required: **{format_number_en(delta_units,0)}**")
+            st.markdown(f"- Break-even change: **{format_percentage_en(pct)}**")
+
+            if pct < 0.10:
+                st.success("🟢 Decision absorbed by the existing business model.")
+            elif pct <= 0.30:
+                st.warning("🟠 Decision looks small, but requires a risky sales increase.")
             else:
-                st.error(
-                    f"🔴 This decision raises the survival threshold to a dangerous level "
-                    f"({format_percentage_en(change_pct)} change)."
-                )
+                st.error("🔴 Decision materially raises the survival threshold.")
 
-            plot_break_even_shift(
-                price_per_unit,
-                variable_cost_per_unit,
-                fixed_costs,
-                bep_old,
-                bep_new
+            plot_break_even(
+                parse_number_en(old_price),
+                parse_number_en(new_price),
+                parse_number_en(old_cost),
+                parse_number_en(new_cost),
+                parse_number_en(investment_cost),
+                parse_number_en(units_sold),
             )
 
         except Exception as e:
-            st.error(f"⚠️ Input error: {e}")
+            st.error(f"Input error: {e}")
