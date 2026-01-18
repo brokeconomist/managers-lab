@@ -1,6 +1,6 @@
 import streamlit as st
 
-# --- Helper functions for English number formatting ---
+# --- Helper functions ---
 def parse_number(number_str):
     """Convert string with English decimal separator to float."""
     try:
@@ -47,34 +47,44 @@ def calculate_max_product_A_sales_drop(
 
 # --- Streamlit UI ---
 def show_substitution_analysis():
-    st.write("Substitution Analysis")
-    st.header("📈 Estimate Acceptable Sales Drop of Product A after Price Increase")
-    st.title("What happens if customers switch to another product? 🔄")
+    st.header("📈 Substitution Analysis Tool")
     st.markdown("""
-You have similar products and are considering a price change for one of them.
+Estimate the **maximum acceptable sales drop** for Product A after a price increase,  
+based on customer switching to other products in your portfolio.
 
-👉 This tool estimates, based on the percentage of customers expected to switch to other products,  
-how your total sales and revenue will be affected.
-
-Useful for similar product lines or promotional pricing decisions.
+Use this for promotional pricing or similar product line decisions.
 """)
 
     with st.form("price_increase_form"):
-        col1, col2 = st.columns(2)
+        st.subheader("Input Data")
 
-        with col1:
-            old_price_input = st.text_input("Current Unit Price of Product A (€)", value=format_number(1.50))
-            price_increase_input = st.text_input("Price Increase (%)", value=format_number(5.0))
-            profit_A_input = st.text_input("Profit per Unit of Product A (€)", value=format_number(0.30))
+        old_price_input = st.text_input("Current Unit Price of Product A (€)", value=format_number(1.50))
+        st.caption("The price at which Product A is currently sold per unit.")
 
-        with col2:
-            profit_B_input = st.text_input("Profit per Unit of Product B (€)", value=format_number(0.20))
-            profit_C_input = st.text_input("Profit per Unit of Product C (€)", value=format_number(0.20))
-            profit_D_input = st.text_input("Profit per Unit of Product D (€)", value=format_number(0.05))
+        price_increase_input = st.text_input("Planned Price Increase for Product A (%)", value=format_number(5.0))
+        st.caption("Percentage increase you plan to apply to Product A's price.")
 
-        percent_B = st.slider("Percentage of customers switching to Product B (%)", 0.0, 100.0, 45.0) / 100
-        percent_C = st.slider("Percentage of customers switching to Product C (%)", 0.0, 100.0, 20.0) / 100
-        percent_D = st.slider("Percentage of customers switching to Product D (%)", 0.0, 100.0, 5.0) / 100
+        profit_A_input = st.text_input("Profit per Unit of Product A (€)", value=format_number(0.30))
+        st.caption("Expected net profit from selling one unit of Product A.")
+
+        profit_B_input = st.text_input("Profit per Unit of Product B (€)", value=format_number(0.20))
+        st.caption("Expected net profit from selling one unit of Product B (substitute product).")
+
+        profit_C_input = st.text_input("Profit per Unit of Product C (€)", value=format_number(0.20))
+        st.caption("Expected net profit from selling one unit of Product C (substitute product).")
+
+        profit_D_input = st.text_input("Profit per Unit of Product D (€)", value=format_number(0.05))
+        st.caption("Expected net profit from selling one unit of Product D (substitute product).")
+
+        st.subheader("Customer Switching Assumptions")
+        percent_B = st.slider("Percentage of customers switching to Product B (%)", 0.0, 100.0, 45.0)
+        st.caption("Estimated fraction of Product A customers who will buy Product B instead after the price change.")
+
+        percent_C = st.slider("Percentage of customers switching to Product C (%)", 0.0, 100.0, 20.0)
+        st.caption("Estimated fraction of Product A customers who will buy Product C instead.")
+
+        percent_D = st.slider("Percentage of customers switching to Product D (%)", 0.0, 100.0, 5.0)
+        st.caption("Estimated fraction of Product A customers who will buy Product D instead.")
 
         submitted = st.form_submit_button("Calculate")
 
@@ -90,7 +100,7 @@ Useful for similar product lines or promotional pricing decisions.
             st.error("❌ Please check that all numeric fields are correctly filled.")
             return
 
-        total_substitute = percent_B + percent_C + percent_D
+        total_substitute = (percent_B + percent_C + percent_D) / 100
         if total_substitute > 1:
             st.error("❌ Total customer switch percentage cannot exceed 100%.")
             return
@@ -104,13 +114,13 @@ Useful for similar product lines or promotional pricing decisions.
             profit_B,
             profit_C,
             profit_D,
-            percent_B,
-            percent_C,
-            percent_D
+            percent_B / 100,
+            percent_C / 100,
+            percent_D / 100
         )
 
         if result is None:
             st.error("❌ Cannot calculate. Try different values.")
         else:
-            st.success(f"✅ Maximum acceptable sales drop for Product A: {format_percentage(result)}")
-            st.info(f"ℹ️ Percentage of customers who will not buy anything: {format_percentage(no_purchase * 100)}")
+            st.success(f"✅ Maximum acceptable sales drop for Product A: {format_percentage(result/100)}")
+            st.info(f"ℹ️ Percentage of customers who will not buy anything: {format_percentage(no_purchase)}")
