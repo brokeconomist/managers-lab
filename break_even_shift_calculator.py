@@ -127,11 +127,9 @@ def show_break_even_shift_calculator():
             "Additional fixed investment (enter 0 if none)",
             "0.00"
         )
-        st.caption(
-    "Any new fixed cost required by this decision 
-(equipment, hiring, software, expansion). 
-Enter 0 if this decision requires no new investment."
-
+   st.caption(
+    "All costs you must cover every period, regardless of sales volume "
+    "(rent, salaries, overheads, subscriptions)."
 )
         old_price_input = st.text_input(
             "Current selling price per unit",
