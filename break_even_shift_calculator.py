@@ -21,7 +21,8 @@ def calculate_break_even_shift_v2(
     new_price,
     old_cost,
     new_cost,
-    investment_cost,
+    fixed_costs,
+    additional_investment,
     units_sold
 ):
     old_cm = old_price - old_cost
@@ -30,10 +31,10 @@ def calculate_break_even_shift_v2(
     if old_cm <= 0 or new_cm <= 0:
         return None, None, None, None
 
-    fixed_costs_old = old_cm * units_sold
-    fixed_costs_new = fixed_costs_old + investment_cost
+    # Το συνολικό νέο σταθερό κόστος είναι τα υπάρχοντα + νέα επένδυση
+    fixed_costs_new = fixed_costs + additional_investment
 
-    old_break_even = fixed_costs_old / old_cm
+    old_break_even = fixed_costs / old_cm
     new_break_even = fixed_costs_new / new_cm
 
     percent_change = (new_break_even - old_break_even) / old_break_even
@@ -49,16 +50,16 @@ def plot_break_even_shift(
     new_price,
     old_cost,
     new_cost,
-    investment_cost,
+    fixed_costs,
+    additional_investment,
     units_sold
 ):
     old_cm = old_price - old_cost
-    fixed_costs_old = old_cm * units_sold
-    fixed_costs_new = fixed_costs_old + investment_cost
+    fixed_costs_new = fixed_costs + additional_investment
 
     x = list(range(0, int(units_sold * 2)))
 
-    old_total_cost = [fixed_costs_old + old_cost * q for q in x]
+    old_total_cost = [fixed_costs + old_cost * q for q in x]
     new_total_cost = [fixed_costs_new + new_cost * q for q in x]
     old_revenue = [old_price * q for q in x]
     new_revenue = [new_price * q for q in x]
@@ -88,31 +89,33 @@ def show_break_even_shift_calculator():
     )
 
     with st.form("break_even_form"):
-        old_price_input = st.text_input(
-            "Τιμή πώλησης ανά μονάδα σήμερα ($)", 
-            "10.50"
+        # ---------------- Input fields ----------------
+        fixed_costs_input = st.text_input(
+            "Σταθερά μηνιαία έξοδα ($) – αυτά που πληρώνεις ανεξάρτητα από τις πωλήσεις",
+            "10000.00"
         )
-        new_price_input = st.text_input(
-            "Νέα τιμή πώλησης ανά μονάδα ($)", 
-            "11.00"
+        additional_investment_input = st.text_input(
+            "Νέα επένδυση / επιπλέον σταθερά ($ – βάλτε 0 αν δεν υπάρχει)",
+            "0.00"
         )
-
         old_cost_input = st.text_input(
-            "Κόστος παραγωγής ανά μονάδα σήμερα ($)", 
+            "Κόστος ανά μονάδα σήμερα ($) – τα μεταβλητά έξοδα για κάθε μονάδα προϊόντος",
             "6.00"
         )
         new_cost_input = st.text_input(
-            "Νέο κόστος παραγωγής ανά μονάδα ($)", 
+            "Νέο κόστος ανά μονάδα ($)",
             "6.50"
         )
-
-        investment_cost_input = st.text_input(
-            "Επένδυση/επιπλέον σταθερά έξοδα ($ – βάλτε 0 αν δεν υπάρχει)", 
-            "0.00"
+        old_price_input = st.text_input(
+            "Τιμή πώλησης ανά μονάδα σήμερα ($)",
+            "10.50"
         )
-
+        new_price_input = st.text_input(
+            "Νέα τιμή πώλησης ανά μονάδα ($)",
+            "11.00"
+        )
         units_sold_input = st.text_input(
-            "Πωλήσεις την προηγούμενη περίοδο (μονάδες)", 
+            "Πωλήσεις την προηγούμενη περίοδο (μονάδες)",
             "500"
         )
 
@@ -120,11 +123,12 @@ def show_break_even_shift_calculator():
 
     if submitted:
         try:
-            old_price = parse_number_en(old_price_input)
-            new_price = parse_number_en(new_price_input)
+            fixed_costs = parse_number_en(fixed_costs_input)
+            additional_investment = parse_number_en(additional_investment_input)
             old_cost = parse_number_en(old_cost_input)
             new_cost = parse_number_en(new_cost_input)
-            investment_cost = parse_number_en(investment_cost_input)
+            old_price = parse_number_en(old_price_input)
+            new_price = parse_number_en(new_price_input)
             units_sold = parse_number_en(units_sold_input)
 
             old_bep, new_bep, percent_change, units_change = (
@@ -133,7 +137,8 @@ def show_break_even_shift_calculator():
                     new_price,
                     old_cost,
                     new_cost,
-                    investment_cost,
+                    fixed_costs,
+                    additional_investment,
                     units_sold
                 )
             )
@@ -145,22 +150,13 @@ def show_break_even_shift_calculator():
                 )
                 return
 
-            st.success(
-                f"Old break-even: {format_number_en(old_bep, 0)} units"
-            )
-            st.success(
-                f"New break-even: {format_number_en(new_bep, 0)} units"
-            )
+            st.success(f"Old break-even: {format_number_en(old_bep,0)} units")
+            st.success(f"New break-even: {format_number_en(new_bep,0)} units")
 
-            st.markdown(
-                f"- **Additional units required:** "
-                f"{format_number_en(units_change, 0)}"
-            )
-            st.markdown(
-                f"- **Break-even change:** "
-                f"{format_percentage_en(percent_change)}"
-            )
+            st.markdown(f"- **Additional units required:** {format_number_en(units_change,0)}")
+            st.markdown(f"- **Break-even change:** {format_percentage_en(percent_change)}")
 
+            # Zone messages
             if percent_change < 0.10:
                 st.success("🟢 Absorbed by current model")
             elif percent_change <= 0.30:
@@ -173,7 +169,8 @@ def show_break_even_shift_calculator():
                 new_price,
                 old_cost,
                 new_cost,
-                investment_cost,
+                fixed_costs,
+                additional_investment,
                 units_sold
             )
 
