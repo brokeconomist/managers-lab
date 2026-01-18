@@ -63,6 +63,10 @@ def plot_break_even_shift(
     total_fixed_old = fixed_costs
     total_fixed_new = fixed_costs + new_investment
 
+    # Υπολογισμός break-even points
+    old_bep = total_fixed_old / old_cm
+    new_bep = total_fixed_new / (new_price - new_unit_cost)
+
     x = list(range(0, int(units_sold * 2)))
 
     old_total_cost = [total_fixed_old + old_unit_cost * q for q in x]
@@ -76,6 +80,10 @@ def plot_break_even_shift(
     plt.plot(x, old_revenue, 'g--', label="Old Revenue")
     plt.plot(x, new_revenue, 'g-', label="New Revenue")
 
+    # Καθετές γραμμές για break-even
+    plt.axvline(old_bep, color='red', linestyle='--', label="Old Break-Even")
+    plt.axvline(new_bep, color='orange', linestyle='--', label="New Break-Even")
+
     plt.xlabel("Units Sold")
     plt.ylabel("USD")
     plt.title("Break-Even Shift Analysis")
@@ -83,6 +91,7 @@ def plot_break_even_shift(
     plt.grid(True)
 
     st.pyplot(plt)
+
 
 
 # -------------------------------------------------
