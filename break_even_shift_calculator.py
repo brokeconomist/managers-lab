@@ -120,53 +120,64 @@ def show_break_even_shift_calculator():
             "10000.00"
         )
         st.caption(
-    "All costs you must cover every period, regardless of sales volume "
-    "(rent, salaries, overheads, subscriptions)."
-)
+            "All costs you must cover every period, regardless of sales volume "
+            "(rent, salaries, overheads, subscriptions)."
+        )
+
         new_investment_input = st.text_input(
             "Additional fixed investment (enter 0 if none)",
             "0.00"
         )
-   st.caption(
-    "All costs you must cover every period, regardless of sales volume "
-    "(rent, salaries, overheads, subscriptions)."
-)
+        st.caption(
+            "Any new fixed cost required by this decision "
+            "(equipment, hiring, software, expansion). "
+            "Enter 0 if this decision requires no new investment."
+        )
+
         old_price_input = st.text_input(
             "Current selling price per unit",
             "10.50"
         )
         st.caption(
-    "All costs you must cover every period, regardless of sales volume "
-    "(rent, salaries, overheads, subscriptions)."
-)
+            "The price at which you currently sell one unit of the product or service."
+        )
+
         new_price_input = st.text_input(
             "New selling price per unit",
             "11.00"
         )
         st.caption(
-    "All costs you must cover every period, regardless of sales volume "
-    "(rent, salaries, overheads, subscriptions)."
-)
+            "The new price you are considering after this decision "
+            "(price increase, discount, promotion, renegotiation)."
+        )
+
         old_unit_cost_input = st.text_input(
             "Current variable cost per unit",
             "6.00"
         )
+        st.caption(
+            "Direct cost per unit sold. "
+            "Includes materials, production, labor, commissions, delivery. "
+            "This cost increases with each additional unit."
+        )
+
         new_unit_cost_input = st.text_input(
             "New variable cost per unit",
             "6.50"
         )
         st.caption(
-    "All costs you must cover every period, regardless of sales volume "
-    "(rent, salaries, overheads, subscriptions)."
-)
+            "Expected direct cost per unit after the decision "
+            "(higher or lower due to suppliers, scale, or efficiency)."
+        )
+
         units_sold_input = st.text_input(
             "Units sold last period",
             "500"
         )
         st.caption(
-    "All costs you must cover every period, regardless of sales volume "
-    "(rent, salaries, overheads, subscriptions)."
-)
+            "How many units you currently sell per period. "
+            "Used as the reference point to calculate your current break-even."
+        )
 
         submitted = st.form_submit_button("Run decision check")
 
