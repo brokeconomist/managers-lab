@@ -1,4 +1,5 @@
 import streamlit as st
+import matplotlib.pyplot as plt
 
 # --- Helper functions ---
 def parse_number(number_str):
@@ -46,9 +47,33 @@ def calculate_required_sales_increase(
 
     try:
         required_increase = loss_per_unit / new_total_profit
-        return required_increase * 100
+        return required_increase * 100  # return as %
     except ZeroDivisionError:
         return None
+
+# --- Plot ---
+def plot_required_sales_increase(required_increase):
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    # Οριζόντια γραμμή στη βάση (0%)
+    ax.axhline(0, color='black', linewidth=1)
+
+    # Κάθετη γραμμή για Required Increase
+    ax.axvline(required_increase, color='orange', linestyle='--', linewidth=2, label="Required Suit Sales Increase")
+
+    # Annotate
+    ax.text(required_increase + 0.5, 0.02, f"{format_percentage(required_increase)}", color='orange', fontsize=12)
+
+    ax.set_xlim(0, max(required_increase*1.5, 10))
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("Sales Increase (%)")
+    ax.set_yticks([])
+    ax.set_title("📊 Required Suit Sales Increase After Discount")
+    ax.legend()
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+
+    st.pyplot(fig)
+    st.markdown("---")
 
 # --- Streamlit UI ---
 def show_complementary_analysis():
@@ -135,3 +160,5 @@ Use this tool to check **how much you need to sell to maintain total profit**.
             st.error("❌ Cannot calculate. Try different values.")
         else:
             st.success(f"✅ Required suit sales increase: {format_percentage(result)}")
+            # Plot the result
+            plot_required_sales_increase(result)
