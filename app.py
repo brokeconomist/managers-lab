@@ -1,6 +1,6 @@
 import streamlit as st
 
-# --- Import των modules σου ---
+# --- Import your modules ---
 from home import show_home
 from start_here import show_start_here
 from break_even_shift_calculator import show_break_even_shift_calculator
@@ -22,7 +22,7 @@ from inventory_turnover_calculator import show_inventory_turnover_calculator
 # --- Page config ---
 st.set_page_config(page_title="Managers’ Lab", page_icon="🧪", layout="centered")
 
-# --- Κατηγοριοποίηση ---
+# --- Categories ---
 tool_categories = {
     "🏠 Lab Home": [
         ("Home", show_home),
