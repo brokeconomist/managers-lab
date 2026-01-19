@@ -1,8 +1,9 @@
 import streamlit as st
 
-# --- Import your modules ---
+# --- Import των modules σου ---
 from home import show_home
 from start_here import show_start_here
+from break_even_calculator import show_break_even_calculator
 from break_even_shift_calculator import show_break_even_shift_calculator
 from clv_calculator import show_clv_calculator
 from substitution_analysis import show_substitution_analysis
@@ -19,19 +20,23 @@ from economic_order_quantity import show_economic_order_quantity
 from credit_days_calculator import show_credit_days_calculator
 from inventory_turnover_calculator import show_inventory_turnover_calculator
 
-# --- Page config ---
-st.set_page_config(page_title="Managers’ Lab", page_icon="🧪", layout="centered")
+# Προαιρετικά άρθρα σαν “tools”
+#from articles import show_article_clv, show_article_banks  # Υποθέτω έχεις άρθρα σε ένα module
 
-# --- Categories ---
+# --- Page config ---
+st.set_page_config(page_title="Managers’ Club", page_icon="📊", layout="centered")
+
+# --- Κατηγοριοποίηση ---
 tool_categories = {
-    "🏠 Lab Home": [
+    "🏠 Home": [
         ("Home", show_home),
     ],
     "💡 Getting Started": [
         ("Start Here", show_start_here),
     ],
     "📈 Break-Even & Pricing": [
-        ("Break-Even Calculator", show_break_even_shift_calculator),
+        ("Break-Even Calculator", show_break_even_calculator),
+        ("Break-Even Shift Analysis", show_break_even_shift_calculator),
         ("Loss Threshold Before Price Cut", show_loss_threshold_before_price_cut),
     ],
     "👥 Customer Value": [
@@ -58,7 +63,7 @@ tool_categories = {
 }
 
 # --- Sidebar ---
-st.sidebar.title("🧪 Managers’ Lab - Tool Categories")
+st.sidebar.title("📊 Managers’ Club - Tool Categories")
 selected_category = st.sidebar.selectbox("Select a Category", list(tool_categories.keys()))
 
 tools_in_category = tool_categories[selected_category]
