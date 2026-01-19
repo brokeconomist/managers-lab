@@ -38,19 +38,61 @@ def calculate_unit_costs(
 
 
 def show_unit_cost_app():
-    st.title("📦 Unit Production Cost Calculator")
+    st.header("📦 Unit Production Cost Analysis")
+    st.caption(
+        "Υπολογισμός μοναδιαίου κόστους παραγωγής, με διάκριση "
+        "μεταξύ κανονικού ωραρίου και υπερωριών."
+    )
 
-    st.header("Input Data")
+    # ================= INPUTS =================
+    with st.form("unit_cost_form"):
+        st.subheader("📊 Παραγωγή (μονάδες)")
 
-    sales_regular = st.number_input("Daily Sales (units – regular hours)", value=1000)
-    sales_overtime = st.number_input("Daily Sales (units – overtime)", value=100)
-    raw_material_cost = st.number_input("Daily Raw Material Cost (€)", value=1500.0)
-    operating_cost_regular = st.number_input("Operating Cost (regular hours) (€)", value=4000.0)
-    operating_cost_overtime = st.number_input("Operating Cost (overtime) (€)", value=400.0)
-    labor_cost_regular = st.number_input("Labor Cost (regular hours) (€)", value=8000.0)
-    labor_cost_overtime = st.number_input("Labor Cost (overtime) (€)", value=1200.0)
+        col1, col2 = st.columns(2)
+        with col1:
+            sales_regular = st.number_input(
+                "Παραγωγή σε κανονικό ωράριο (μονάδες / ημέρα)",
+                value=1000
+            )
+        with col2:
+            sales_overtime = st.number_input(
+                "Παραγωγή σε υπερωρίες (μονάδες / ημέρα)",
+                value=100
+            )
 
-    if st.button("Calculate Costs"):
+        st.subheader("💸 Κόστος Πρώτων Υλών")
+        raw_material_cost = st.number_input(
+            "Συνολικό ημερήσιο κόστος πρώτων υλών (€)",
+            value=1500.0
+        )
+
+        st.subheader("🏭 Λειτουργικό & Εργατικό Κόστος")
+
+        col3, col4 = st.columns(2)
+        with col3:
+            operating_cost_regular = st.number_input(
+                "Λειτουργικό κόστος (κανονικό ωράριο) (€)",
+                value=4000.0
+            )
+            labor_cost_regular = st.number_input(
+                "Εργατικό κόστος (κανονικό ωράριο) (€)",
+                value=8000.0
+            )
+
+        with col4:
+            operating_cost_overtime = st.number_input(
+                "Λειτουργικό κόστος (υπερωρίες) (€)",
+                value=400.0
+            )
+            labor_cost_overtime = st.number_input(
+                "Εργατικό κόστος (υπερωρίες) (€)",
+                value=1200.0
+            )
+
+        submitted = st.form_submit_button("📐 Υπολογισμός Κόστους")
+
+    # ================= RESULTS =================
+    if submitted:
         avg_total, avg_regular, avg_overtime = calculate_unit_costs(
             sales_regular,
             sales_overtime,
@@ -61,7 +103,25 @@ def show_unit_cost_app():
             labor_cost_overtime
         )
 
-        st.subheader("Results:")
-        st.metric("🔹 Average Unit Cost (Total)", f"{avg_total:.2f} €")
-        st.metric("🟢 Unit Cost (Regular Hours)", f"{avg_regular:.2f} €")
-        st.metric("🕐 Unit Cost (Overtime Hours)", f"{avg_overtime:.2f} €")
+        st.markdown("---")
+        st.subheader("🧮 Αποτελέσματα Κόστους")
+
+        r1, r2, r3 = st.columns(3)
+        r1.metric(
+            "Μέσο Μοναδιαίο Κόστος (σύνολο)",
+            f"{avg_total:.2f} €"
+        )
+        r2.metric(
+            "Μοναδιαίο Κόστος – Κανονικό Ωράριο",
+            f"{avg_regular:.2f} €"
+        )
+        r3.metric(
+            "Μοναδιαίο Κόστος – Υπερωρίες",
+            f"{avg_overtime:.2f} €"
+        )
+
+        st.markdown(
+            "ℹ️ **Ερμηνεία:** Το κόστος πρώτων υλών κατανέμεται σε όλες τις μονάδες, "
+            "ενώ το εργατικό και λειτουργικό κόστος επιβαρύνει ξεχωριστά "
+            "την κανονική παραγωγή και τις υπερωρίες."
+        )
