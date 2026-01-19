@@ -12,7 +12,6 @@ from credit_policy_app import show_credit_policy_analysis
 from supplier_credit_app import show_supplier_credit_analysis
 from cash_cycle import run_cash_cycle_app
 from loan_vs_leasing_calculator import loan_vs_leasing_ui
-from gross_profit_analysis import show_gross_profit_analysis
 from unit_cost_app import show_unit_cost_app
 from discount_npv_ui import show_discount_npv_ui
 from economic_order_quantity import show_economic_order_quantity
@@ -49,7 +48,6 @@ tool_categories = {
         ("Loan vs Leasing Analysis", loan_vs_leasing_ui),
     ],
     "📊 Cost & Profit": [
-        ("Gross Profit Estimation", show_gross_profit_analysis),
         ("Unit Cost Calculator", show_unit_cost_app),
         ("Discount NPV Analysis", show_discount_npv_ui),
         ("Economic Order Quantity (EOQ)", show_economic_order_quantity),
