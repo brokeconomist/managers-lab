@@ -3,31 +3,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # -------------------------------
-# LOGIC
+# LOGIC (UNCHANGED)
 # -------------------------------
 
-def required_sales_increase(price_reduction_pct, contribution_margin, substitution_factor):
+def required_sales_increase(price_reduction_pct, contribution_margin):
     """
-    Calculate required sales increase (%) to compensate for price reduction,
-    adjusted for substitution effects.
+    Calculates the required sales increase (%) to offset a price reduction,
+    given the contribution margin.
     """
     if contribution_margin <= 0 or contribution_margin >= 1:
         return 0
-    base_increase = price_reduction_pct / contribution_margin * 100
-    adjusted_increase = base_increase * substitution_factor
-    return round(adjusted_increase, 2)
+    return round(price_reduction_pct / contribution_margin * 100, 2)
 
 
-def feasible_sales_increase(required_increase, max_market_capacity_pct):
+def apply_substitution_effect(base_increase, substitution_factor):
     """
-    Adjust required sales increase for finite market capacity.
+    Applies substitution intensity factor to required sales increase.
     """
-    return min(required_increase, max_market_capacity_pct)
+    return round(base_increase * substitution_factor, 2)
 
 
 def plot_substitutes_sensitivity(base_value, scenarios):
     """
-    Tornado sensitivity chart for substitutes.
+    Tornado-style sensitivity chart for substitutes
     """
     labels = []
     impacts = []
@@ -41,64 +39,95 @@ def plot_substitutes_sensitivity(base_value, scenarios):
     impacts = np.array(impacts)
 
     fig, ax = plt.subplots()
-    ax.barh(labels, impacts, color='skyblue')
-    ax.axvline(0, color='black', linewidth=0.8)
+    ax.barh(labels, impacts)
+    ax.axvline(0)
+
     ax.set_xlabel("Impact on Required Sales Increase (%)")
     ax.set_title("Sensitivity Analysis – Substitutes")
-    plt.tight_layout()
+
     return fig
+
 
 # -------------------------------
 # UI
 # -------------------------------
 
 def show_substitutes_sensitivity_tool():
-    st.title("🔁 Substitutes – Sales Sensitivity Analysis Tool")
+    st.title("🔁 Substitutes – Sensitivity Analysis Tool")
 
     st.markdown("""
-This tool estimates how **substitute products affect the required sales increase**  
-after a **price reduction** for your main product.
+    ### Technical perspective
 
-It also accounts for **finite market size**, showing what is **actually feasible**.
-""")
+    This tool evaluates **how substitution pressure affects the required sales increase**
+    following a **price reduction**.
 
-    st.subheader("📥 Base Scenario")
-    col1, col2 = st.columns(2)
+    ⚠️ The model performs **no market forecasting**.  
+    All feasibility judgments are based on **user-defined assumptions**.
+    """)
 
-    with col1:
-        price_reduction = st.number_input(
-            "Price Reduction (%)",
-            min_value=0.0,
-            value=5.0,
-            step=0.5
-        ) / 100
+    # -------------------------------
+    # BASE SCENARIO
+    # -------------------------------
 
-        contribution_margin = st.number_input(
-            "Contribution Margin (%)",
-            min_value=1.0,
-            max_value=99.0,
-            value=40.0,
-            step=1.0
-        ) / 100
+    st.subheader("📥 Base Scenario (Model Calculation)")
 
-    with col2:
-        max_market_capacity = st.number_input(
-            "Max Market Capacity (%)",
-            min_value=0.0,
-            max_value=500.0,
-            value=150.0,
-            step=5.0
-        )
+    price_reduction = st.number_input(
+        "Price Reduction (%)",
+        min_value=0.0,
+        value=5.0,
+        step=0.5
+    ) / 100
 
-    base_required = required_sales_increase(price_reduction, contribution_margin, substitution_factor=1.0)
-    feasible_increase = feasible_sales_increase(base_required, max_market_capacity)
+    contribution_margin = st.number_input(
+        "Contribution Margin (%)",
+        min_value=1.0,
+        max_value=99.0,
+        value=40.0,
+        step=1.0
+    ) / 100
 
-    st.info(f"📌 **Base Required Sales Increase:** {base_required}%")
-    st.success(f"📌 **Feasible Sales Increase (considering market limit):** {feasible_increase}%")
+    base_required = required_sales_increase(
+        price_reduction,
+        contribution_margin
+    )
+
+    st.info(f"📌 **Model-derived required sales increase:** {base_required}%")
+
+    st.caption(
+        "This value is purely mechanical: "
+        "price reduction divided by contribution margin."
+    )
 
     st.divider()
-    st.subheader("🔁 Substitution Scenarios")
-    st.markdown("Define how aggressively substitute products impact sales:")
+
+    # -------------------------------
+    # USER ASSUMPTION (EXOGENOUS)
+    # -------------------------------
+
+    st.subheader("👤 User-Defined Market Capacity (External Assumption)")
+
+    max_capacity = st.number_input(
+        "Maximum feasible sales increase (%)",
+        min_value=0.0,
+        value=10.0,
+        step=1.0
+    )
+
+    st.warning(
+        "This input represents **your own judgment** about market limits.\n\n"
+        "• It is NOT calculated by the model\n"
+        "• It does NOT represent a forecast\n"
+        "• It reflects beliefs about market size, consumption frequency, "
+        "and ability to capture share from competitors"
+    )
+
+    st.divider()
+
+    # -------------------------------
+    # SUBSTITUTION SCENARIOS
+    # -------------------------------
+
+    st.subheader("🔁 Substitution Intensity Scenarios")
 
     low = st.slider("Low substitution", 0.5, 1.0, 0.8, 0.05)
     base = st.slider("Base case", 0.8, 1.2, 1.0, 0.05)
@@ -114,12 +143,24 @@ It also accounts for **finite market size**, showing what is **actually feasible
 
     st.divider()
 
+    # -------------------------------
+    # RESULTS
+    # -------------------------------
+
     if st.button("📊 Run Sensitivity Analysis"):
-        st.subheader("📈 Scenario Results")
+        st.subheader("📈 Results")
+
         for name, factor in scenarios.items():
-            adjusted = required_sales_increase(price_reduction, contribution_margin, factor)
-            feasible = feasible_sales_increase(adjusted, max_market_capacity)
-            st.write(f"**{name}** → Required: {adjusted}%, Feasible: {feasible}%")
+            adjusted = apply_substitution_effect(base_required, factor)
+
+            feasible = adjusted <= max_capacity
+
+            status = "✅ Feasible" if feasible else "❌ Infeasible"
+
+            st.write(
+                f"**{name}** → Required increase: **{adjusted}%** "
+                f"| User capacity: {max_capacity}% → {status}"
+            )
 
         st.subheader("📊 Sensitivity Diagram")
         fig = plot_substitutes_sensitivity(base_required, scenarios)
@@ -128,11 +169,12 @@ It also accounts for **finite market size**, showing what is **actually feasible
         st.divider()
 
         st.markdown("""
-### 🧠 How to read this chart
-- ➖ Left: low substitute effect  
-- ➕ Right: high substitute effect  
-- Bars show how substitution changes the **required sales increase**  
-- Feasible sales may be **lower** than required if the market is limited  
+        ### Technical interpretation
 
-✔ If the worst-case scenario exceeds market capacity → price reduction may **not be feasible**
-""")
+        - The model **does not decide** whether a strategy is viable  
+        - It only computes **required sales growth**
+        - Feasibility depends entirely on **your externally imposed constraint**
+
+        If required growth exceeds your stated market capacity,
+        the scenario should be rejected **based on your own assumptions**.
+        """)
