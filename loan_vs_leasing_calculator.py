@@ -3,10 +3,7 @@ from loan_vs_leasing_logic import calculate_final_burden
 
 
 def format_number_en(value, decimals=0):
-    try:
-        return f"{value:,.{decimals}f}"
-    except Exception:
-        return str(value)
+    return f"{value:,.{decimals}f}"
 
 
 def loan_vs_leasing_ui():
@@ -19,15 +16,17 @@ def loan_vs_leasing_ui():
         loan_rate = st.number_input("Loan Interest Rate (%)", value=6.0) / 100
         wc_rate = st.number_input("Working Capital Interest Rate (%)", value=8.0) / 100
         duration_years = st.number_input("Duration (years)", min_value=1, value=15)
-        pay_when_radio = st.radio(
+
+        payment_timing = st.radio(
             "Payment Timing",
             ["Beginning of Period", "End of Period"]
         )
-        pay_when = 1 if pay_when_radio == "Beginning of Period" else 0
+        pay_when = 1 if payment_timing == "Beginning of Period" else 0
+
         tax_rate = st.number_input("Corporate Tax Rate (%)", value=35.0) / 100
 
     with col2:
-        property_value = st.number_input("Property Market Value (€)", min_value=0.0, value=250_000.0)
+        property_value = st.number_input("Property Market Value (€)", value=250_000.0)
         loan_financing = st.number_input("Loan Financing (%)", value=70.0) / 100
         leasing_financing = st.number_input("Leasing Financing (%)", value=100.0) / 100
         add_expenses_loan = st.number_input("Additional Acquisition Costs (Loan €)", value=35_000.0)
@@ -53,17 +52,8 @@ def loan_vs_leasing_ui():
     )
 
     col1, col2 = st.columns(2)
-    col1.metric(
-        "📉 Total Cost – Loan",
-        f"€ {format_number_en(final_loan, 0)}"
-    )
-    col2.metric(
-        "📉 Total Cost – Leasing",
-        f"€ {format_number_en(final_leasing, 0)}"
-    )
+    col1.metric("Total Cost – Loan", f"€ {format_number_en(final_loan)}")
+    col2.metric("Total Cost – Leasing", f"€ {format_number_en(final_leasing)}")
 
-    st.write("---")
-    st.markdown(
-        "✅ **The option with the lower total cost is the financially preferable choice.**"
-    )
-
+    st.markdown("---")
+    st.success("The option with the lower total cost is the financially preferable choice.")
