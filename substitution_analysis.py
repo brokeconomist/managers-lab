@@ -1,100 +1,130 @@
 import streamlit as st
+import matplotlib.pyplot as plt
+import numpy as np
 
-# ---------- Helpers ----------
-def parse_number(x):
-    try:
-        return float(x.replace(",", ""))
-    except:
-        return None
+# -------------------------------
+# LOGIC
+# -------------------------------
 
-def format_percentage(x, decimals=2):
-    return f"{x:.{decimals}f}%"
+def required_sales_increase(price_reduction_pct, contribution_margin):
+    """
+    Υπολογίζει την απαιτούμενη αύξηση πωλήσεων (%) για να καλυφθεί
+    μείωση τιμής, με δεδομένο περιθώριο συνεισφοράς
+    """
+    if contribution_margin <= 0 or contribution_margin >= 1:
+        return 0
+    return round(price_reduction_pct / contribution_margin * 100, 2)
 
-# ---------- Core calculation ----------
-def calculate_max_product_A_sales_drop(
-    old_price,
-    price_increase_pct,
-    profit_A,
-    profit_B,
-    profit_C,
-    profit_D,
-    percent_B,
-    percent_C,
-    percent_D
-):
-    weighted_substitute_profit = (
-        percent_B * profit_B +
-        percent_C * profit_C +
-        percent_D * profit_D
-    )
 
-    numerator = -price_increase_pct
-    denominator = ((profit_A - weighted_substitute_profit) / old_price) + price_increase_pct
+def apply_substitution_effect(base_increase, substitution_factor):
+    """
+    Εφαρμόζει τον βαθμό υποκατάστασης
+    """
+    return round(base_increase * substitution_factor, 2)
 
-    if denominator == 0:
-        return None
 
-    return (numerator / denominator) * 100
+def plot_substitutes_sensitivity(base_value, scenarios):
+    """
+    Tornado sensitivity chart για υποκατάστατα
+    """
+    labels = []
+    impacts = []
 
-# ---------- UI ----------
-def show_substitution_analysis():
-    st.header("🔁 Substitution Analysis – Product A Price Increase")
+    for name, factor in scenarios.items():
+        adjusted = base_value * factor
+        impact = adjusted - base_value
+        labels.append(name)
+        impacts.append(impact)
+
+    impacts = np.array(impacts)
+
+    fig, ax = plt.subplots()
+    ax.barh(labels, impacts)
+    ax.axvline(0)
+
+    ax.set_xlabel("Impact on Required Sales Increase (%)")
+    ax.set_title("Sensitivity Analysis – Substitutes")
+
+    return fig
+
+
+# -------------------------------
+# UI
+# -------------------------------
+
+def show_substitutes_sensitivity_tool():
+    st.title("🔁 Substitutes – Sensitivity Analysis Tool")
 
     st.markdown("""
-**Goal:**  
-Estimate the **maximum acceptable sales drop of Product A**  
-after a price increase, **without reducing total department profit**.
+    Αυτό το εργαλείο δείχνει **πώς επηρεάζουν τα υποκατάστατα**
+    την **απαιτούμενη αύξηση πωλήσεων**, μετά από **μείωση τιμής**.
 
-⚠️ Customers who do not switch to another product are assumed to **leave without buying anything**.
-""")
+    👉 Στόχος: **στρατηγική απόφαση**, όχι απλή αριθμητική.
+    """)
 
-    with st.form("substitution_form"):
-        st.subheader("Product A (Price Increase)")
-        old_price = parse_number(st.text_input("Current price of Product A (€)", "1.50"))
-        price_increase_pct = parse_number(st.text_input("Price increase (%)", "10")) / 100
-        profit_A = parse_number(st.text_input("Profit per unit – Product A (€)", "0.30"))
+    st.subheader("📥 Base Scenario")
 
-        st.subheader("Substitute Products – Profit per Unit (€)")
-        profit_B = parse_number(st.text_input("Product B", "0.20"))
-        profit_C = parse_number(st.text_input("Product C", "0.20"))
-        profit_D = parse_number(st.text_input("Product D", "0.05"))
+    price_reduction = st.number_input(
+        "Price Reduction (%)",
+        min_value=0.0,
+        value=5.0,
+        step=0.5
+    ) / 100
 
-        st.subheader("Customer Switching (%)")
-        percent_B = st.slider("Switch to Product B", 0.0, 100.0, 45.0) / 100
-        percent_C = st.slider("Switch to Product C", 0.0, 100.0, 20.0) / 100
-        percent_D = st.slider("Switch to Product D", 0.0, 100.0, 5.0) / 100
+    contribution_margin = st.number_input(
+        "Contribution Margin (%)",
+        min_value=1.0,
+        max_value=99.0,
+        value=40.0,
+        step=1.0
+    ) / 100
 
-        submitted = st.form_submit_button("📊 Calculate")
+    base_required = required_sales_increase(
+        price_reduction,
+        contribution_margin
+    )
 
-    if submitted:
-        total_switch = percent_B + percent_C + percent_D
-        if total_switch > 1:
-            st.error("Total switching percentage cannot exceed 100%.")
-            return
+    st.info(f"📌 **Base Required Sales Increase:** {base_required}%")
 
-        no_purchase = 1 - total_switch
+    st.divider()
 
-        result = calculate_max_product_A_sales_drop(
-            old_price,
-            price_increase_pct,
-            profit_A,
-            profit_B,
-            profit_C,
-            profit_D,
-            percent_B,
-            percent_C,
-            percent_D
-        )
+    st.subheader("🔁 Substitution Scenarios")
 
-        st.markdown("---")
+    st.markdown("Ορίζεις πόσο επιθετικά λειτουργούν τα υποκατάστατα:")
+
+    low = st.slider("Low substitution", 0.5, 1.0, 0.8, 0.05)
+    base = st.slider("Base case", 0.8, 1.2, 1.0, 0.05)
+    high = st.slider("High substitution", 1.0, 1.5, 1.25, 0.05)
+    aggressive = st.slider("Very aggressive substitute", 1.2, 2.0, 1.5, 0.05)
+
+    scenarios = {
+        "Low substitution": low,
+        "Base case": base,
+        "High substitution": high,
+        "Very aggressive substitute": aggressive
+    }
+
+    st.divider()
+
+    if st.button("📊 Run Sensitivity Analysis"):
         st.subheader("📈 Results")
 
-        st.metric(
-            "Maximum acceptable sales drop of Product A",
-            format_percentage(result)
-        )
+        for name, factor in scenarios.items():
+            adjusted = apply_substitution_effect(base_required, factor)
+            st.write(f"**{name}** → Required increase: **{adjusted}%**")
 
-        st.caption(
-            f"Customers not purchasing anything after the price increase: "
-            f"{format_percentage(no_purchase * 100)}"
-        )
+        st.subheader("📊 Sensitivity Diagram")
+        fig = plot_substitutes_sensitivity(base_required, scenarios)
+        st.pyplot(fig)
+
+        st.divider()
+
+        st.markdown("""
+        ### 🧠 How to read this chart
+        - ➖ Αριστερά: χαμηλός κίνδυνος υποκατάστασης  
+        - ➕ Δεξιά: **επικίνδυνη αγορά**
+        - Όσο μεγαλύτερη η μπάρα → τόσο **μεγαλύτερη στρατηγική πίεση**
+
+        ✔ Αν το **worst case** είναι μη ρεαλιστικό → η μείωση τιμής **δεν πρέπει να γίνει**
+        """)
+
