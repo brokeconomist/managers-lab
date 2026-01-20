@@ -37,7 +37,7 @@ def calculate_max_product_A_sales_drop(
     return (numerator / denominator) * 100
 
 # ---------- UI ----------
-def show_substitution_analysis():
+def show_complementary_analysis():
     st.header("🔁 Substitution Analysis – Product A Price Increase")
 
     st.markdown("""
