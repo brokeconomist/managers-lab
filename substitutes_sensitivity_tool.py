@@ -8,8 +8,8 @@ import numpy as np
 
 def required_sales_increase(price_reduction_pct, contribution_margin):
     """
-    Υπολογίζει την απαιτούμενη αύξηση πωλήσεων (%) για να καλυφθεί
-    μείωση τιμής, με δεδομένο περιθώριο συνεισφοράς
+    Calculates the required sales increase (%) to offset
+    a price reduction, given the contribution margin.
     """
     if contribution_margin <= 0 or contribution_margin >= 1:
         return 0
@@ -18,14 +18,14 @@ def required_sales_increase(price_reduction_pct, contribution_margin):
 
 def apply_substitution_effect(base_increase, substitution_factor):
     """
-    Εφαρμόζει τον βαθμό υποκατάστασης
+    Applies the substitution intensity factor
     """
     return round(base_increase * substitution_factor, 2)
 
 
 def plot_substitutes_sensitivity(base_value, scenarios):
     """
-    Tornado sensitivity chart για υποκατάστατα
+    Tornado sensitivity chart for substitutes
     """
     labels = []
     impacts = []
@@ -56,10 +56,10 @@ def show_substitutes_sensitivity_tool():
     st.title("🔁 Substitutes – Sensitivity Analysis Tool")
 
     st.markdown("""
-    Αυτό το εργαλείο δείχνει **πώς επηρεάζουν τα υποκατάστατα**
-    την **απαιτούμενη αύξηση πωλήσεων**, μετά από **μείωση τιμής**.
+    This tool shows **how substitutes affect**
+    the **required sales increase** after a **price reduction**.
 
-    👉 Στόχος: **στρατηγική απόφαση**, όχι απλή αριθμητική.
+    👉 Purpose: **strategic decision-making**, not simple arithmetic.
     """)
 
     st.subheader("📥 Base Scenario")
@@ -90,7 +90,7 @@ def show_substitutes_sensitivity_tool():
 
     st.subheader("🔁 Substitution Scenarios")
 
-    st.markdown("Ορίζεις πόσο επιθετικά λειτουργούν τα υποκατάστατα:")
+    st.markdown("Define how aggressively substitutes compete:")
 
     low = st.slider("Low substitution", 0.5, 1.0, 0.8, 0.05)
     base = st.slider("Base case", 0.8, 1.2, 1.0, 0.05)
@@ -121,10 +121,9 @@ def show_substitutes_sensitivity_tool():
 
         st.markdown("""
         ### 🧠 How to read this chart
-        - ➖ Αριστερά: χαμηλός κίνδυνος υποκατάστασης  
-        - ➕ Δεξιά: **επικίνδυνη αγορά**
-        - Όσο μεγαλύτερη η μπάρα → τόσο **μεγαλύτερη στρατηγική πίεση**
+        - ➖ Left: low substitution risk  
+        - ➕ Right: **dangerous market**
+        - The longer the bar → the **higher the strategic pressure**
 
-        ✔ Αν το **worst case** είναι μη ρεαλιστικό → η μείωση τιμής **δεν πρέπει να γίνει**
+        ✔ If the **worst-case scenario** is unrealistic → the price cut **should not be implemented**
         """)
-
