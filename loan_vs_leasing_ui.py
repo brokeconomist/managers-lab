@@ -1,5 +1,4 @@
 import streamlit as st
-from loan_vs_leasing_logic import calculate_final_burden
 
 def format_number(value):
     return f"€ {value:,.0f}"
