@@ -5,7 +5,7 @@ from home import show_home
 from start_here import show_start_here
 from break_even_shift_calculator import show_break_even_shift_calculator
 from clv_calculator import show_clv_calculator
-from substitution_analysis import show_substitution_analysis
+from substitutes_sensitivity_tool import show_substitutes_sensitivity_tool
 from complementary_analysis import show_complementary_analysis
 from loss_threshold import show_loss_threshold_before_price_cut
 from credit_policy_app import show_credit_policy_analysis
@@ -37,7 +37,7 @@ tool_categories = {
     ],
     "👥 Customer Value": [
         ("CLV Analysis", show_clv_calculator),
-        ("Substitution Analysis", show_substitution_analysis),
+        ("Substitution Analysis", show_substitutes_sensitivity_tool),
         ("Complementary Product Analysis", show_complementary_analysis),
     ],
     "💰 Finance & Cash Flow": [
