@@ -58,9 +58,9 @@ tool_categories = {
         ("Credit Days Calculator", show_credit_days_calculator),
         ("Inventory Turnover Analysis", show_inventory_turnover_calculator),
     ],
-    "🧭 Strategy & Decision": [
+    ""🧭 Strategy & Decision": [
     ("QSPM – Strategy Comparison", show_qspm_tool),
-    ],
+    ],"
 
 }
 
