@@ -20,16 +20,35 @@ def show_qspm_tool():
     st.title("🧭 QSPM – Quantitative Strategic Planning Matrix")
     st.subheader("Comparison of **two alternative strategies**")
 
-    st.markdown("""
-    ⚠️ **Conceptual clarification**
+    # -------------------------------------------------
+    # EXPLANATORY TEXT (CORE PHILOSOPHY)
+    # -------------------------------------------------
 
-    - The QSPM **does not forecast outcomes**
-    - It **does not estimate probabilities**
-    - It **does not claim objectivity**
+    st.markdown("""
+    ### How to use this tool
+
+    **What this tool does**
+    - Structures a strategic comparison between **two serious alternatives**
+    - Forces explicit **trade-offs**
+    - Makes your **assumptions visible and testable**
+
+    **What this tool does NOT do**
+    - ❌ It does **not** forecast the market  
+    - ❌ It does **not** estimate probabilities  
+    - ❌ It does **not** claim objectivity  
 
     👉 All inputs reflect **your managerial judgment**.  
-    The tool only **structures your assumptions** and
-    shows which strategy is **more internally consistent** with them.
+    The model does **not decide** — it only shows which strategy is
+    **more consistent with your own assumptions**.
+
+    **Why only two strategies?**
+    Strategic decisions are rarely made among many options.
+    In practice:
+    - many ideas exist initially,
+    - most are rejected qualitatively,
+    - the real decision happens between **two viable paths**.
+
+    This tool is designed for that final comparison.
     """)
 
     st.divider()
@@ -77,7 +96,6 @@ def show_qspm_tool():
     score_B = []
 
     st.divider()
-
     st.markdown("### Criteria definition & scoring")
 
     for i in range(num_criteria):
@@ -101,7 +119,7 @@ def show_qspm_tool():
                     value=1.0,
                     step=0.5,
                     key=f"weight_{i}",
-                    help="Relative importance of this criterion"
+                    help="Relative importance of this criterion (managerial judgment)"
                 )
 
             with c3:
@@ -137,12 +155,8 @@ def show_qspm_tool():
 
     norm_weights = normalize_weights(weights)
 
-    weighted_A = [
-        norm_weights[i] * score_A[i] for i in range(num_criteria)
-    ]
-    weighted_B = [
-        norm_weights[i] * score_B[i] for i in range(num_criteria)
-    ]
+    weighted_A = [norm_weights[i] * score_A[i] for i in range(num_criteria)]
+    weighted_B = [norm_weights[i] * score_B[i] for i in range(num_criteria)]
 
     total_A = sum(weighted_A)
     total_B = sum(weighted_B)
@@ -208,11 +222,11 @@ def show_qspm_tool():
     st.markdown("""
     🔎 **Important reminder**
 
-    A different outcome will emerge if:
-    - You change the **criteria**
-    - You change their **importance**
-    - You reassess **strategy attractiveness**
+    If the result feels uncomfortable, ask:
+    - Are the **criteria** correct?
+    - Are the **weights** realistic?
+    - Are the **scores honest**?
 
-    👉 The decision is **yours**, not the model’s.
+    👉 The decision remains **yours**.  
+    The QSPM simply makes your reasoning explicit.
     """)
-
