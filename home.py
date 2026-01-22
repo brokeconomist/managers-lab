@@ -19,6 +19,58 @@ def show_home():
     The tools are already built. Judgment is yours.
     """)
 
+   
+    # -------------------------------------------------
+    # HOW TO USE (AS REQUESTED — UNCHANGED)
+    # -------------------------------------------------
+
+    st.divider()
+
+    st.subheader("How to use the Lab")
+    st.markdown("""
+    Use the sidebar to open a specific tool once you know which decision frame you are operating in.  
+
+    Focus on tolerance, not forecasts. Small changes compound structurally.  
+
+    If you need guidance, Getting Started explains the decision logic behind the Lab.
+    """)
+
+    # -------------------------------------------------
+    # CONTACT (UNCHANGED)
+    # -------------------------------------------------
+
+    st.markdown("""
+    **Contact**  
+    For feedback, questions, or collaboration:  
+    ✉️ brokeconomist@gmail.com
+    """)
+
+import streamlit as st
+
+def show_home():
+    st.title("🧪 Managers’ Lab")
+
+    st.markdown("""
+    A decision laboratory for managers.
+
+    Not a dashboard.  
+    Not a reporting or forecasting tool.
+
+    Managers’ Lab exists to test what must be true for a decision to work —  
+    and what breaks when it doesn’t.
+
+    The tools are already built.  
+    Judgment is yours.
+    """)
+
+    st.divider()
+
+    st.markdown("""
+    **Choose the type of decision you are trying to make.**
+    """)
+
+    # (Εδώ θα μπαίνουν τα grouped tool buttons / sections)
+
     st.divider()
 
     st.markdown("### Choose the type of decision you are trying to make.")
@@ -108,27 +160,18 @@ def show_home():
         st.session_state.selected_category = "🧭 Strategy & Decision"
         st.session_state.selected_tool = "QSPM – Strategy Comparison"
 
-    # -------------------------------------------------
-    # HOW TO USE (AS REQUESTED — UNCHANGED)
-    # -------------------------------------------------
-
-    st.divider()
-
-    st.subheader("How to use the Lab")
     st.markdown("""
-    Use the sidebar to open a specific tool once you know which decision frame you are operating in.  
+    **How to use the Lab**
 
-    Focus on tolerance, not forecasts. Small changes compound structurally.  
-
-    If you need guidance, Getting Started explains the decision logic behind the Lab.
+    Open a tool from the main menu or sidebar once the decision frame is clear.  
+    Focus on tolerance, not forecasts — small changes compound structurally.
     """)
 
-    # -------------------------------------------------
-    # CONTACT (UNCHANGED)
-    # -------------------------------------------------
+    st.divider()
 
     st.markdown("""
     **Contact**  
     For feedback, questions, or collaboration:  
     ✉️ brokeconomist@gmail.com
     """)
+
