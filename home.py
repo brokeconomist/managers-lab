@@ -97,7 +97,7 @@ The tools are already built. Judgment is yours.
     # -------------------------------------------------
     # COFFEE BUTTON (optional support)
     # -------------------------------------------------
-    col1, col2, col3 = st.columns([1, 2, 1])
+    "col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown(
             "<div style='text-align: center;'>"
@@ -107,7 +107,7 @@ The tools are already built. Judgment is yours.
             "</div>",
             unsafe_allow_html=True
         )
-        st.caption("For those who find value here.")
+        st.caption("For those who find value here.")"
 
     st.divider()
 
