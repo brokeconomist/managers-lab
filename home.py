@@ -11,14 +11,12 @@ def show_home():
     st.markdown("""
     A decision laboratory for managers.
 
-    Not a dashboard.  
-    Not a reporting or forecasting tool.
+    Not a dashboard. Not a reporting or forecasting tool.
 
     Managers’ Lab exists to test what must be true for a decision to work —  
     and what breaks when it doesn’t.
 
-    The tools are already built.  
-    Judgment is yours.
+    The tools are already built. Judgment is yours.
     """)
 
     st.divider()
