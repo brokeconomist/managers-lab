@@ -111,6 +111,22 @@ def show_home():
         st.session_state.selected_category = "🧭 Strategy & Decision"
         st.session_state.selected_tool = "QSPM – Strategy Comparison"
 
+    st.divider()
+
+        col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown(
+            "<div style='text-align: center;'>"
+            "<a href='https://buymeacoffee.com/USERNAME' target='_blank'>"
+            "☕ Buy me a coffee"
+            "</a>"
+            "</div>",
+            unsafe_allow_html=True
+    )
+        st.caption("For those who find value here.")
+
+
 
     st.divider()
 
