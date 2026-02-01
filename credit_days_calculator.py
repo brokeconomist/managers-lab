@@ -4,19 +4,16 @@ import streamlit as st
 # LOGIC
 # =========================================
 
-def calculate_weighted_average(customers, credit_days):
-    """
-    Weighted average of credit days based on number of customers.
-    """
-    total_customers = sum(customers)
+def calculate_weighted_average(amounts, credit_days):
+    total_amount = sum(amounts)
 
-    if total_customers == 0:
+    if total_amount == 0:
         return 0, 0.0
 
-    weighted_sum = sum(c * d for c, d in zip(customers, credit_days))
-    weighted_average = weighted_sum / total_customers
+    weighted_sum = sum(a * d for a, d in zip(amounts, credit_days))
+    weighted_avg = weighted_sum / total_amount
 
-    return total_customers, round(weighted_average, 2)
+    return total_amount, round(weighted_avg, 2)
 
 
 # =========================================
@@ -27,9 +24,8 @@ def show_credit_days_calculator():
     st.title("📅 Weighted Average Credit Days")
 
     st.caption(
-        "Calculate the **average credit period** across customer categories, "
-        "weighted by the **number of customers**. "
-        "Useful for receivables and cash-flow planning."
+        "True average credit period weighted by **amount owed**, "
+        "not by number of customers."
     )
 
     st.markdown("---")
@@ -41,62 +37,92 @@ def show_credit_days_calculator():
         value=4
     )
 
+    names = []
     customers = []
+    amounts = []
     credit_days = []
 
-    col1, col2 = st.columns(2)
+    st.markdown("### 📥 Input data")
 
-    with col1:
-        st.subheader("👥 Customers")
-        for i in range(num_categories):
-            customers.append(
-                st.number_input(
-                    f"Category {i+1} – Customers",
-                    min_value=0,
-                    step=1,
-                    key=f"cust_{i}"
-                )
-            )
+    h1, h2, h3, h4 = st.columns([2, 1, 2, 1])
+    h1.write("**Category**")
+    h2.write("**Customers**")
+    h3.write("**Amount Owed (€)**")
+    h4.write("**Credit Days**")
 
-    with col2:
-        st.subheader("📆 Credit Days")
-        for i in range(num_categories):
-            credit_days.append(
-                st.number_input(
-                    f"Category {i+1} – Credit Days",
-                    min_value=0,
-                    step=1,
-                    key=f"days_{i}"
-                )
+    for i in range(num_categories):
+        c1, c2, c3, c4 = st.columns([2, 1, 2, 1])
+
+        names.append(
+            c1.text_input(
+                "Category",
+                value=f"Category {i+1}",
+                label_visibility="hidden",
+                key=f"name_{i}"
             )
+        )
+
+        customers.append(
+            c2.number_input(
+                "Customers",
+                min_value=0,
+                step=1,
+                label_visibility="hidden",
+                key=f"cust_{i}"
+            )
+        )
+
+        amounts.append(
+            c3.number_input(
+                "Amount",
+                min_value=0.0,
+                step=1000.0,
+                label_visibility="hidden",
+                key=f"amt_{i}"
+            )
+        )
+
+        credit_days.append(
+            c4.number_input(
+                "Days",
+                min_value=0,
+                step=1,
+                label_visibility="hidden",
+                key=f"days_{i}"
+            )
+        )
 
     st.markdown("---")
 
     if st.button("📊 Calculate", type="primary"):
 
-        total_customers, weighted_avg = calculate_weighted_average(
-            customers, credit_days
+        total_amount, weighted_avg = calculate_weighted_average(
+            amounts, credit_days
         )
 
-        if total_customers == 0:
-            st.error("⚠️ Enter at least one customer.")
+        if total_amount == 0:
+            st.error("⚠️ Enter at least one amount.")
             return
 
         st.subheader("📈 Results")
 
-        c1, c2 = st.columns(2)
+        m1, m2 = st.columns(2)
 
-        c1.metric(
-            "Total Customers",
-            f"{total_customers}"
+        m1.metric(
+            "Total Receivables",
+            f"€{total_amount:,.0f}"
         )
 
-        c2.metric(
+        m2.metric(
             "Weighted Avg Credit Days",
             f"{weighted_avg} days"
         )
 
-        st.info(
-            "💡 This average reflects **where most of your customers actually are**, "
-            "not a simple arithmetic mean."
-        )
+        st.markdown("### 📋 Detail table")
+
+        for n, c, a, d in zip(names, customers, amounts, credit_days):
+            if a > 0:
+                st.write(
+                    f"• **{n}** | Customers: {c} | Amount: €{a:,.0f} | "
+                    f"Days: {d} | Contribution: €{a*d:,.0f}"
+                )
