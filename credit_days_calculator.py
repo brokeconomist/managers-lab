@@ -96,10 +96,6 @@ def plot_credit_days_chart(names, amounts, credit_days, weighted_avg, simple_avg
 # ==========================================
 
 def show_credit_days_calculator():
-    st.set_page_config(
-        page_title="Credit Days Calculator | Managers' Lab",
-        layout="wide"
-    )
 
     st.title("📅 Weighted Average Credit Days")
     st.caption(
