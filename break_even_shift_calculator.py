@@ -32,15 +32,14 @@ def plot_break_even(fixed_costs, price, unit_cost, units_sold):
 
     ax.set_xlabel("Units sold")
     ax.set_ylabel("Currency")
-    ax.set_title("Break-Even Analysis Chart")
+    ax.set_title("Break-Even Position Analysis")
     ax.legend()
     ax.grid(True, alpha=0.3)
     
     st.pyplot(fig)
 
-# --- Main Entry Point (Matches app.py Line 8) ---
+# --- Main Entry Point ---
 def show_break_even_shift_calculator():
-    # Note: No st.set_page_config here as it's handled in app.py
     st.header("📈 Executive Break-Even & Pricing Dashboard")
     st.write("Stress-test your business model against shifts in price, cost, and volume.")
 
@@ -61,7 +60,7 @@ def show_break_even_shift_calculator():
         c_stress = st.slider("Cost Shift (%)", -30, 30, 0)
         v_stress = st.slider("Volume Shift (%)", -50, 50, 0)
 
-        calculate = st.button("Run Stress Test Analysis")
+        calculate = st.button("Run Executive Analysis")
 
     if calculate:
         try:
@@ -74,7 +73,7 @@ def show_break_even_shift_calculator():
             # Calculation
             margin = price - cost
             if margin <= 0:
-                st.error("🔴 Fatal Error: Contribution margin is zero or negative. The model is structurally broken under these stress conditions.")
+                st.error("🔴 Fatal Error: Contribution margin is zero or negative. The model collapses.")
                 return
 
             bep_units = fixed / margin
@@ -90,11 +89,11 @@ def show_break_even_shift_calculator():
             # Executive Summary
             st.divider()
             if risk > 70:
-                st.error(f"🔴 High Risk Alert: Potential loss of ${abs(actual_profit):,.2f}")
+                st.error(f"🔴 High Risk Alert: Projected Loss of ${abs(actual_profit):,.2f}")
             elif risk > 30:
                 st.warning(f"🟠 Moderate Risk: Profit margin is thin (${actual_profit:,.2f})")
             else:
-                st.success(f"🟢 Low Risk: Projected profit of ${actual_profit:,.2f}")
+                st.success(f"🟢 Low Risk: Projected Profit of ${actual_profit:,.2f}")
 
             # KPI Grid
             c1, c2, c3 = st.columns(3)
@@ -114,8 +113,21 @@ def show_break_even_shift_calculator():
             with col_b:
                 st.subheader("💡 Strategic Insights")
                 req_price = (fixed / volume) + cost if volume > 0 else 0
-                st.write(f"To break even at current volume, your price must be at least: **${req_price:,.2f}**")
                 
+                # Expanded analytical feedback
+                st.write(f"**Structural Summary:**")
+                st.write(f"- Total Fixed Costs (incl. Target): **${fixed:,.2f}**")
+                st.write(f"- Stressed Sales Volume: **{int(volume)} units**")
+                st.write(f"- Stressed Variable Cost: **${cost:,.2f}**")
+                
+                st.markdown("---")
+                st.write(f"To cover your total fixed costs of **${fixed:,.2f}** at a volume of **{int(volume)}** units, your price must be at least: **${req_price:,.2f}**")
+                
+                if volume < bep_units:
+                    gap = bep_units - volume
+                    st.warning(f"⚠️ You are **{int(gap)} units** below the break-even point.")
+                else:
+                    st.success(f"✅ You are operating **{int(volume - bep_units)} units** above break-even.")
 
         except Exception as e:
             st.error(f"Calculation Error: {e}")
