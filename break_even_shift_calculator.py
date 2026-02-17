@@ -107,82 +107,35 @@ def show_break_even_shift_calculator():
     )
 
     with st.form("break_even_form"):
-        fixed_costs_input = st.text_input(
-            "Existing fixed costs per period",
-            "10000.00"
-        )
-        st.caption(
-            "All recurring costs you must cover every period, regardless of sales volume. "
-            "Examples: rent, salaries, utilities, subscriptions, insurance."
-        )
+        fixed_costs_input = st.text_input("Existing fixed costs per period", "10000.00")
+        st.caption("All recurring costs you must cover every period, regardless of sales volume.")
 
-        new_investment_input = st.text_input(
-            "Additional fixed investment (enter 0 if none)",
-            "0.00"
-        )
-        st.caption(
-            "Any new fixed cost required by this decision "
-            "(equipment, hiring, software, expansion). "
-            "Enter 0 if this decision requires no new investment."
-        )
-        target_profit_input = st.text_input(
-            "Target profit per period (leave 0 if none)",
-            "0.00"
-        )
-        st.caption(
-            "Optional. Enter the profit you want to generate per period. "
-            "This amount will be added to fixed costs to calculate the break-even with profit."
-        )
+        new_investment_input = st.text_input("Additional fixed investment (enter 0 if none)", "0.00")
+        st.caption("Any new fixed cost required by this decision.")
 
-        old_price_input = st.text_input(
-            "Current selling price per unit",
-            "10.50"
-        )
-        st.caption(
-            "The price at which you currently sell one unit of the product or service."
-        )
+        target_profit_input = st.text_input("Target profit per period (leave 0 if none)", "0.00")
+        st.caption("Optional. Enter the profit you want to generate per period.")
 
-        new_price_input = st.text_input(
-            "New selling price per unit",
-            "11.00"
-        )
-        st.caption(
-            "The new price you are considering after this decision "
-            "(price increase, discount, promotion, renegotiation)."
-        )
+        old_price_input = st.text_input("Current selling price per unit", "10.50")
+        st.caption("The price at which you currently sell one unit.")
 
-        old_unit_cost_input = st.text_input(
-            "Current variable cost per unit",
-            "6.00"
-        )
-        st.caption(
-            "Direct cost per unit sold. "
-            "Includes materials, production, labor, commissions, delivery. "
-            "This cost increases with each additional unit."
-        )
+        new_price_input = st.text_input("New selling price per unit", "11.00")
+        st.caption("The new price you are considering after this decision.")
 
-        new_unit_cost_input = st.text_input(
-            "New variable cost per unit",
-            "6.50"
-        )
-        st.caption(
-            "Expected direct cost per unit after the decision "
-            "(higher or lower due to suppliers, scale, or efficiency)."
-        )
+        old_unit_cost_input = st.text_input("Current variable cost per unit", "6.00")
+        st.caption("Direct cost per unit sold.")
 
-        units_sold_input = st.text_input(
-            "Units sold per period (current level)",
-            "500"
-        )
-        st.caption(
-            "How many units you currently sell per period. "
-            "Used only as a reference point to show how far the break-even moves."
-        )
+        new_unit_cost_input = st.text_input("New variable cost per unit", "6.50")
+        st.caption("Expected direct cost per unit after the decision.")
+
+        units_sold_input = st.text_input("Units sold per period (current level)", "500")
+        st.caption("How many units you currently sell per period.")
 
         submitted = st.form_submit_button("Run decision check")
 
     if submitted:
         try:
+            # 1. PARSING SECTION
             fixed_costs = parse_number_en(fixed_costs_input)
             new_investment = parse_number_en(new_investment_input)
             target_profit = parse_number_en(target_profit_input)
@@ -191,6 +144,14 @@ def show_break_even_shift_calculator():
             old_unit_cost = parse_number_en(old_unit_cost_input)
             new_unit_cost = parse_number_en(new_unit_cost_input)
             units_sold = parse_number_en(units_sold_input)
+
+            # --- ΠΡΟΣΘΗΚΗ 1: Dynamic pricing suggestion (Μετά τα parsing) ---
+            suggested_price = None
+            if units_sold > 0:
+                suggested_price = (
+                    (fixed_costs + target_profit) / units_sold
+                ) + new_unit_cost
+            # -----------------------------------------
 
             old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
                 fixed_costs + target_profit,
@@ -202,16 +163,29 @@ def show_break_even_shift_calculator():
                 units_sold
             )
 
-
             if percent_change is None:
-                st.error(
-                    "Contribution margin is zero or negative. "
-                    "This decision destroys the business model."
-                )
+                st.error("Contribution margin is zero or negative. This decision destroys the business model.")
                 return
 
+            # 2. RESULTS SECTION
             st.success(f"Current break-even: {format_number_en(old_bep, 0)} units")
             st.success(f"New break-even after decision: {format_number_en(new_bep, 0)} units")
+
+            # --- ΠΡΟΣΘΗΚΗ 2: Display Suggested Price (Μετά τα break even results) ---
+            if suggested_price is not None:
+                st.markdown("---")
+                st.subheader("💡 Dynamic Pricing Suggestion")
+
+                st.markdown(
+                    f"If you sell **{format_number_en(units_sold,0)} units**, "
+                    f"to generate **{format_number_en(target_profit,0)} USD profit**, "
+                    f"you should charge approximately:"
+                )
+
+                st.success(
+                    f"Suggested price per unit: {format_number_en(suggested_price,2)} USD"
+                )
+            # -----------------------------------------
 
             st.markdown(f"- **Additional units required:** {format_number_en(units_change,0)}")
             st.markdown(f"- **Change in required sales threshold:** {format_percentage_en(percent_change)}")
@@ -231,7 +205,11 @@ def show_break_even_shift_calculator():
                 old_unit_cost,
                 new_unit_cost,
                 units_sold
-                )
+            )
 
         except Exception as e:
             st.error(f"Input error: {e}")
+
+# Call the function to run the app
+if __name__ == "__main__":
+    show_break_even_shift_calculator()
