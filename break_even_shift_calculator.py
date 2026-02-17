@@ -42,7 +42,7 @@ def calculate_break_even_shift(
     old_break_even = total_fixed_old / old_cm
     new_break_even = total_fixed_new / new_cm
 
-    percent_change = (new_break_even - old_break_even) / old_break_even
+    percent_change = (new_break_even - old_break_even) / old_break_even if old_break_even != 0 else 0
     units_change = new_break_even - old_break_even
 
     return old_break_even, new_break_even, percent_change, units_change
@@ -64,8 +64,9 @@ def plot_break_even_shift(
     new_cm = new_price - new_unit_cost
     total_fixed_old = fixed_costs
     total_fixed_new = fixed_costs + new_investment
-    bep_old = total_fixed_old / old_cm
-    bep_new = total_fixed_new / new_cm
+    
+    bep_old = total_fixed_old / old_cm if old_cm > 0 else 0
+    bep_new = total_fixed_new / new_cm if new_cm > 0 else 0
 
     max_units = int(max(bep_old, bep_new, units_sold) * 1.5) + 5
     x = list(range(0, max_units))
@@ -75,20 +76,20 @@ def plot_break_even_shift(
     old_revenue = [old_price * q for q in x]
     new_revenue = [new_price * q for q in x]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(x, old_total_cost, 'r--', label="Current Total Cost", alpha=0.6)
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(x, old_total_cost, 'r--', label="Current Total Cost", alpha=0.5)
     ax.plot(x, new_total_cost, 'r-', label="New Total Cost")
-    ax.plot(x, old_revenue, 'g--', label="Current Revenue", alpha=0.6)
+    ax.plot(x, old_revenue, 'g--', label="Current Revenue", alpha=0.5)
     ax.plot(x, new_revenue, 'g-', label="New Revenue")
 
-    ax.axvline(bep_new, color='blue', linestyle="--", label=f"New Break-Even ({int(bep_new)})")
+    ax.axvline(bep_new, color='blue', linestyle="--", label=f"New BEP ({int(bep_new)})")
     ax.axvline(units_sold, color='orange', linestyle="-.", label=f"Current Sales ({int(units_sold)})")
 
     ax.set_xlabel("Units sold")
-    ax.set_ylabel("USD")
-    ax.set_title("Break-Even Shift & Sales Position")
-    ax.legend()
-    ax.grid(True, linestyle=':', alpha=0.7)
+    ax.set_ylabel("Currency")
+    ax.set_title("Financial Impact Visualization")
+    ax.legend(fontsize='small')
+    ax.grid(True, linestyle=':', alpha=0.6)
     st.pyplot(fig)
 
 # -------------------------------------------------
@@ -96,99 +97,100 @@ def plot_break_even_shift(
 # -------------------------------------------------
 
 def show_break_even_shift_calculator():
-    st.set_page_config(page_title="Break-Even Decision Tool", layout="wide")
-    st.header("🟠 Strategic Break-Even & Pricing Tool")
+    st.set_page_config(page_title="Strategic Decision Tool", layout="wide")
+    st.header("🟠 Strategic Break-Even & Pricing Analyzer")
     
     with st.sidebar:
-        st.subheader("Input Parameters")
+        st.subheader("Financial Inputs")
         with st.form("break_even_form"):
-            fixed_costs_input = st.text_input("Existing fixed costs", "10000.00")
-            new_investment_input = st.text_input("New fixed investment", "0.00")
-            target_profit_input = st.text_input("Target profit", "0.00")
+            fixed_costs_input = st.text_input("Existing Fixed Costs", "10000.00")
+            new_investment_input = st.text_input("New Investment/Fixed Cost", "2000.00")
+            target_profit_input = st.text_input("Target Profit", "5000.00")
             st.divider()
-            old_price_input = st.text_input("Current price", "10.50")
-            new_price_input = st.text_input("New price", "11.00")
+            old_price_input = st.text_input("Current Price", "50.00")
+            new_price_input = st.text_input("New Price", "55.00")
             st.divider()
-            old_unit_cost_input = st.text_input("Current variable cost", "6.00")
-            new_unit_cost_input = st.text_input("New variable cost", "6.50")
+            old_unit_cost_input = st.text_input("Current Variable Cost", "20.00")
+            new_unit_cost_input = st.text_input("New Variable Cost", "22.00")
             st.divider()
-            units_sold_input = st.text_input("Current units sold", "500")
+            units_sold_input = st.text_input("Current Sales Volume (Units)", "400")
             
-            submitted = st.form_submit_button("Analyze Decision")
+            submitted = st.form_submit_button("Generate Analysis")
 
     if submitted:
         try:
             # 1. PARSING
-            fixed_costs = parse_number_en(fixed_costs_input)
-            new_investment = parse_number_en(new_investment_input)
-            target_profit = parse_number_en(target_profit_input)
-            old_price = parse_number_en(old_price_input)
-            new_price = parse_number_en(new_price_input)
-            old_unit_cost = parse_number_en(old_unit_cost_input)
-            new_unit_cost = parse_number_en(new_unit_cost_input)
-            units_sold = parse_number_en(units_sold_input)
+            f_costs = parse_number_en(fixed_costs_input)
+            n_inv = parse_number_en(new_investment_input)
+            t_profit = parse_number_en(target_profit_input)
+            o_price = parse_number_en(old_price_input)
+            n_price = parse_number_en(new_price_input)
+            o_cost = parse_number_en(old_unit_cost_input)
+            n_cost = parse_number_en(new_unit_cost_input)
+            u_sold = parse_number_en(units_sold_input)
 
             # 2. CALCULATIONS
             # Dynamic pricing suggestion
-            suggested_price = None
-            if units_sold > 0:
-                suggested_price = ((fixed_costs + new_investment + target_profit) / units_sold) + new_unit_cost
+            s_price = ((f_costs + n_inv + t_profit) / u_sold) + n_cost if u_sold > 0 else 0
 
             # Volume at current new price
-            required_units_current_price = None
-            current_cm = new_price - new_unit_cost
-            if current_cm > 0:
-                required_units_current_price = (fixed_costs + new_investment + target_profit) / current_cm
+            req_units_n_price = (f_costs + n_inv + t_profit) / (n_price - n_cost) if (n_price - n_cost) > 0 else 0
 
             # Break-even shift
-            old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
-                fixed_costs + target_profit, new_investment, old_price, new_price, 
-                old_unit_cost, new_unit_cost, units_sold
+            old_bep, new_bep, p_change, u_change = calculate_break_even_shift(
+                f_costs + t_profit, n_inv, o_price, n_price, o_cost, n_cost, u_sold
             )
 
-            if percent_change is None:
-                st.error("Negative contribution margin. The model is unsustainable.")
+            if p_change is None:
+                st.error("Negative contribution margin. The business model is not viable under these settings.")
                 return
 
-            # 3. DISPLAY RESULTS
-            col1, col2 = st.columns(2)
+            # Margin of Safety
+            mos_percent = (u_sold - new_bep) / u_sold if u_sold > 0 else 0
+
+            # 3. UI LAYOUT
+            col1, col2 = st.columns([1, 1])
 
             with col1:
-                st.subheader("📈 Break-Even Analysis")
-                st.metric("New Break-Even Point", f"{format_number_en(new_bep, 0)} units")
-                st.write(f"Old BEP: {format_number_en(old_bep, 0)} | Change: {format_percentage_en(percent_change)}")
+                st.subheader("📊 Key Metrics")
+                kpi1, kpi2 = st.columns(2)
+                kpi1.metric("New BEP", f"{int(new_bep)} units")
+                kpi2.metric("Sales Gap", f"{int(req_units_n_price - u_sold)} units")
                 
-                # --- MARGIN OF SAFETY ---
-                if units_sold > 0:
-                    mos_units = units_sold - new_bep
-                    mos_percent = mos_units / units_sold
-                    
-                    st.subheader("🛡️ Margin of Safety")
-                    if mos_percent > 0:
-                        st.success(f"Your margin of safety is **{format_percentage_en(mos_percent)}**")
-                        st.caption(f"You can lose up to {int(mos_units)} sales before hitting zero profit.")
-                    else:
-                        st.error(f"Negative Margin: **{format_percentage_en(mos_percent)}**")
-                        st.warning("You are currently below the break-even point for this new scenario.")
+                # Margin of Safety Display
+                st.write("**Margin of Safety:**")
+                if mos_percent > 0:
+                    st.success(f"{format_percentage_en(mos_percent)} safety buffer")
+                else:
+                    st.error(f"{format_percentage_en(mos_percent)} (Below Break-even)")
+
+                plot_break_even_shift(f_costs + t_profit, n_inv, o_price, n_price, o_cost, n_cost, u_sold)
 
             with col2:
-                if suggested_price:
-                    st.subheader("💡 Dynamic Pricing Suggestion")
-                    st.info(f"Target Price: **{format_number_en(suggested_price, 2)} USD**")
-                    st.caption(f"Price needed to hit {format_number_en(target_profit, 0)} USD profit with current volume.")
+                st.subheader("📋 Client Executive Summary")
+                
+                # RISK ASSESSMENT
+                risk_level = "High" if p_change > 0.3 else "Moderate" if p_change > 0.1 else "Low"
+                
+                report_text = f"""
+**Strategic Analysis Report**
+---
+1. **Break-Even Impact:** The sales threshold required to hit your target profit has changed by **{format_percentage_en(p_change)}**. 
+   - New target: **{int(new_bep)} units**.
 
-                if required_units_current_price:
-                    st.subheader("📊 Volume Requirement")
-                    st.write(f"Required units at {new_price} USD: **{format_number_en(required_units_current_price, 0)}**")
-                    gap = required_units_current_price - units_sold
-                    if gap > 0:
-                        st.warning(f"Sales gap: +{int(gap)} units needed.")
+2. **Pricing Strategy:** - To maintain current sales volume ({int(u_sold)} units) and hit your profit goal, the price should be adjusted to **{format_number_en(s_price, 2)}**.
+   - At your proposed price ({format_number_en(n_price, 2)}), you need a total of **{int(req_units_n_price)} units** to meet objectives.
 
-            st.divider()
-            plot_break_even_shift(fixed_costs + target_profit, new_investment, old_price, new_price, old_unit_cost, new_unit_cost, units_sold)
+3. **Risk Profile:** This decision is considered **{risk_level} Risk**. 
+   - Your current Margin of Safety is **{format_percentage_en(mos_percent)}**.
+
+4. **Observation:** {'🟢 Current sales exceed the new break-even point.' if mos_percent > 0 else '🔴 Current sales are insufficient to cover the new cost structure.'}
+                """
+                st.markdown(report_text)
+                st.button("Copy to Clipboard (Simulated)", help="Select text above to copy")
 
         except Exception as e:
-            st.error(f"System Error: {e}")
+            st.error(f"Analysis Error: {e}")
 
 if __name__ == "__main__":
     show_break_even_shift_calculator()
