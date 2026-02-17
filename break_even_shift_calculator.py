@@ -214,14 +214,14 @@ def show_break_even_shift_calculator():
             st.success(f"New break-even after decision: {format_number_en(new_bep, 0)} units")
 
             st.markdown(f"- **Additional units required:** {format_number_en(units_change,0)}")
-            st.markdown(f"- **Change in survival threshold:** {format_percentage_en(percent_change)}")
+            st.markdown(f"- **Change in required sales threshold:** {format_percentage_en(percent_change)}")
 
             if percent_change < 0.10:
                 st.success("🟢 Absorbed by current model")
             elif percent_change <= 0.30:
                 st.warning("🟠 Stretches sales capacity")
             else:
-                st.error("🔴 High-risk decision — survival threshold jumps")
+                st.error("🔴 High-risk decision — required sales threshold jumps")
 
             plot_break_even_shift(
                 fixed_costs + target_profit,
