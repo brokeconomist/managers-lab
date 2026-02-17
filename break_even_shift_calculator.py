@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 # -------------------------------------------------
 # Helper functions
 # -------------------------------------------------
-
 def parse_number_en(number_str):
     try:
         return float(str(number_str).replace(",", ""))
@@ -18,9 +17,8 @@ def format_percentage_en(number, decimals=1):
     return f"{number*100:.{decimals}f}%"
 
 # -------------------------------------------------
-# Plot
+# Plot Logic
 # -------------------------------------------------
-
 def plot_break_even(fixed_costs, price, unit_cost, units_sold):
     cm = price - unit_cost
     if cm <= 0:
@@ -41,22 +39,21 @@ def plot_break_even(fixed_costs, price, unit_cost, units_sold):
 
     ax.set_xlabel("Units sold")
     ax.set_ylabel("USD")
-    ax.set_title("Break-Even Analysis Chart")
+    ax.set_title("Break-Even Position Chart")
     ax.legend()
     ax.grid(True, alpha=0.3)
     
     st.pyplot(fig)
 
 # -------------------------------------------------
-# Streamlit UI (RENAMED TO MATCH APP.PY)
+# MAIN FUNCTION (Renamed to match app.py)
 # -------------------------------------------------
-
 def show_break_even_shift_calculator():
-    # Κατάργηση st.set_page_config (υπάρχει ήδη στο app.py)
+    # ΣΗΜΑΝΤΙΚΟ: Αφαιρέθηκε το set_page_config γιατί υπάρχει ήδη στο app.py
     st.header("📈 Executive Break-Even & Pricing Dashboard")
     st.caption("Stress-test your business model against price, cost, and volume shifts.")
 
-    # SIDEBAR INPUTS
+    # SIDEBAR
     with st.sidebar:
         st.subheader("Base Inputs")
         fixed_costs_input = st.text_input("Existing fixed costs", "10000.00")
@@ -78,7 +75,7 @@ def show_break_even_shift_calculator():
 
     if run:
         try:
-            # PARSING
+            # Parsing values
             fixed_costs = parse_number_en(fixed_costs_input)
             new_investment = parse_number_en(new_investment_input)
             target_profit = parse_number_en(target_profit_input)
@@ -88,43 +85,38 @@ def show_break_even_shift_calculator():
 
             total_fixed = fixed_costs + new_investment + target_profit
 
-            # APPLY STRESS
+            # Stress application
             stressed_price = new_price * (1 + price_stress / 100)
             stressed_cost = new_unit_cost * (1 + cost_stress / 100)
             stressed_volume = units_sold * (1 + volume_stress / 100)
 
-            st.info(f"Scenario: Price {price_stress}% | Cost {cost_stress}% | Volume {volume_stress}%")
-
-            # CALCULATIONS
+            # Calculations
             stressed_cm = stressed_price - stressed_cost
-
             if stressed_cm <= 0:
-                st.error("🔴 Contribution margin is negative. Model is not viable under this stress.")
+                st.error("🔴 Contribution margin is negative. Business model collapses under this stress.")
                 return
 
             new_bep = total_fixed / stressed_cm
-            stressed_profit = stressed_cm * stressed_volume - total_fixed
+            stressed_profit = (stressed_cm * stressed_volume) - total_fixed
             mos_percent = (stressed_volume - new_bep) / stressed_volume if stressed_volume > 0 else -1
 
-            # RISK SCORE LOGIC
+            # Risk Assessment
             risk_score = 0
             if mos_percent < 0: risk_score += 40
             elif mos_percent < 0.10: risk_score += 25
-            elif mos_percent < 0.25: risk_score += 10
-            if stressed_profit < 0: risk_score += 30
-            if new_bep > stressed_volume: risk_score += 20
+            if stressed_profit < 0: risk_score += 35
             risk_score = min(risk_score, 100)
 
-            # EXECUTIVE SIGNAL
+            # Executive Summary
             st.divider()
             if risk_score < 25:
-                st.success("🟢 LOW RISK — Business model is robust.")
+                st.success("🟢 LOW RISK — Model absorbs scenario.")
             elif risk_score < 60:
-                st.warning("🟠 MODERATE RISK — Monitor margins closely.")
+                st.warning("🟠 MODERATE RISK — Execution is critical.")
             else:
-                st.error("🔴 HIGH RISK — High probability of operational loss.")
+                st.error("🔴 HIGH RISK — High failure probability.")
 
-            # KPI BOARD
+            # KPI Metrics
             k1, k2, k3, k4 = st.columns(4)
             k1.metric("Break-Even Units", format_number_en(new_bep, 0))
             k2.metric("Stressed Profit", f"${format_number_en(stressed_profit, 0)}")
@@ -132,23 +124,26 @@ def show_break_even_shift_calculator():
             k4.metric("Risk Score", f"{risk_score}/100")
 
             st.divider()
+            
+            # Insights
             col1, col2 = st.columns(2)
             with col1:
-                st.subheader("📊 Unit Analysis")
-                st.write(f"Required for Target: **{format_number_en(new_bep, 0)}** units")
+                st.subheader("📊 Profitability Insight")
+                st.write(f"Break-even at: **{format_number_en(new_bep, 0)}** units.")
                 
 
 [Image of break even point graph]
 
             with col2:
-                st.subheader("💡 Strategic Insight")
+                st.subheader("💡 Strategic Pricing")
                 req_p = (total_fixed / stressed_volume + stressed_cost) if stressed_volume > 0 else 0
-                st.write(f"Price needed for current volume: **${format_number_en(req_p, 2)}**")
+                st.write(f"Required Price for current volume: **${format_number_en(req_p, 2)}**")
 
             plot_break_even(total_fixed, stressed_price, stressed_cost, stressed_volume)
 
         except Exception as e:
-            st.error(f"Analysis Error: {e}")
+            st.error(f"System Error: {e}")
 
+# Boilerplate for direct execution
 if __name__ == "__main__":
     show_break_even_shift_calculator()
