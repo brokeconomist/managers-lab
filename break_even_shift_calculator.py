@@ -2,7 +2,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# --- Utilities: Συναρτήσεις για τη διαχείριση αριθμών ---
+# --- Utilities ---
 def parse_number_en(number_str):
     try:
         return float(str(number_str).replace(",", ""))
@@ -12,39 +12,50 @@ def parse_number_en(number_str):
 def format_number_en(number, decimals=2):
     return f"{number:,.{decimals}f}"
 
-# --- Plotting: Δημιουργία Γραφήματος ---
+# --- Enhanced Plotting: Μεγαλύτερο και πιο καθαρό γράφημα ---
 def plot_break_even(fixed_costs, price, unit_cost, units_sold):
     cm = price - unit_cost
     if cm <= 0:
         return
 
     bep = fixed_costs / cm
-    max_units = int(max(bep, units_sold) * 1.5) + 5
+    # Δημιουργούμε ένα εύρος που να δείχνει καθαρά το Break-Even
+    max_units = int(max(bep, units_sold) * 1.6) + 10
     x = list(range(0, max_units))
 
     total_cost = [fixed_costs + unit_cost * q for q in x]
     revenue = [price * q for q in x]
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(x, total_cost, label="Total Cost", color="#d62728", linewidth=2)
-    ax.plot(x, revenue, label="Revenue", color="#2ca02c", linewidth=2)
-    ax.axvline(bep, linestyle="--", color="gray", label=f"Break-Even ({int(bep)})")
-    ax.axvline(units_sold, linestyle="-.", color="blue", label=f"Current Sales ({int(units_sold)})")
-
-    ax.set_xlabel("Units sold")
-    ax.set_ylabel("Currency")
-    ax.set_title("Break-Even Position Analysis")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+    # Αύξηση μεγέθους γραφήματος (12x7 αντί για 10x6)
+    fig, ax = plt.subplots(figsize=(12, 7))
     
+    ax.plot(x, total_cost, label="Total Cost", color="#d62728", linewidth=3)
+    ax.plot(x, revenue, label="Revenue", color="#2ca02c", linewidth=3)
+    
+    # Διακεκομμένες γραμμές για τα σημεία αναφοράς
+    ax.axvline(bep, linestyle="--", color="#7f7f7f", linewidth=2, label=f"Break-Even Point ({int(bep)})")
+    ax.axvline(units_sold, linestyle="-.", color="#1f77b4", linewidth=2, label=f"Stressed Sales ({int(units_sold)})")
+
+    # Μορφοποίηση τίτλων και αξόνων
+    ax.set_xlabel("Units Sold", fontsize=12, fontweight='bold')
+    ax.set_ylabel("Currency (USD)", fontsize=12, fontweight='bold')
+    ax.set_title("Executive Break-Even Analysis", fontsize=16, fontweight='bold', pad=20)
+    
+    ax.legend(fontsize=10, loc='upper left')
+    ax.grid(True, linestyle=':', alpha=0.6)
+    
+    # Προσθήκη "σκίασης" στην περιοχή κέρδους
+    ax.fill_between(x, revenue, total_cost, where=[r > c for r, c in zip(revenue, total_cost)], 
+                    color='green', alpha=0.1, label='Profit Zone')
+
     st.pyplot(fig)
 
-# --- Η Κύρια Συνάρτηση που τρέχει το εργαλείο ---
+# --- Main Entry Point ---
 def show_break_even_shift_calculator():
     st.header("📈 Executive Break-Even & Pricing Dashboard")
     st.write("Stress-test your business model against shifts in price, cost, and volume.")
 
-    # ΠΛΕΥΡΙΚΟ ΜΕΝΟΥ (Inputs)
+    # SIDEBAR
     with st.sidebar:
         st.subheader("Financial Inputs")
         f_costs = st.text_input("Existing Fixed Costs", "10000.00")
@@ -64,16 +75,14 @@ def show_break_even_shift_calculator():
 
         calculate = st.button("Run Executive Analysis")
 
-    # ΑΠΟΤΕΛΕΣΜΑΤΑ (Outputs)
     if calculate:
         try:
-            # Μετατροπή των κειμένων σε αριθμούς
+            # Parsing
             fixed = parse_number_en(f_costs) + parse_number_en(f_invest) + parse_number_en(t_profit)
             price = parse_number_en(u_price) * (1 + p_stress / 100)
             cost = parse_number_en(u_cost) * (1 + c_stress / 100)
             volume = parse_number_en(u_sold) * (1 + v_stress / 100)
 
-            # Υπολογισμοί
             margin = price - cost
             if margin <= 0:
                 st.error("🔴 Fatal Error: Contribution margin is zero or negative. The model collapses.")
@@ -83,7 +92,7 @@ def show_break_even_shift_calculator():
             actual_profit = (margin * volume) - fixed
             mos = (volume - bep_units) / volume if volume > 0 else -1
 
-            # Υπολογισμός Ρίσκου
+            # Risk Assessment
             risk = 0
             if actual_profit < 0: risk += 50
             if mos < 0.10: risk += 30
@@ -91,63 +100,52 @@ def show_break_even_shift_calculator():
 
             st.divider()
 
-            # 1. Executive Signal (Φανάρι Ρίσκου)
-            if risk > 70:
-                st.error(f"🔴 High Risk Alert: Projected Loss of ${abs(actual_profit):,.2f}")
-            elif risk > 30:
-                st.warning(f"🟠 Moderate Risk: Profit margin is thin (${actual_profit:,.2f})")
-            else:
-                st.success(f"🟢 Low Risk: Projected Profit of ${actual_profit:,.2f}")
-
-            # 2. Κεντρικά Metrics
+            # 1. Dashboard Metrics
             c1, c2, c3 = st.columns(3)
-            c1.metric("Break-Even Point", f"{int(bep_units)} units")
-            c2.metric("Projected Profit", f"${actual_profit:,.2f}")
+            c1.metric("Break-Even Units", f"{int(bep_units)}")
+            c2.metric("Projected Profit", f"${actual_profit:,.0f}")
             c3.metric("Margin of Safety", f"{mos*100:.1f}%")
 
             st.divider()
             
-            # 3. Ανάλυση σε δύο στήλες
+            # 2. Visualization (Full Width)
+            st.subheader("📊 Profit & Loss Visualization")
+            plot_break_even(fixed, price, cost, volume)
+            
+
+            st.divider()
+
+            # 3. Strategic Analysis Section
             col_left, col_right = st.columns(2)
             
             with col_left:
-                st.subheader("📊 Visualization")
-                plot_break_even(fixed, price, cost, volume)
-                
-            
-            with col_right:
-                st.subheader("💡 Strategic Insights")
-                req_price = (fixed / volume) + cost if volume > 0 else 0
-                
-                # Πίνακας για καθαρή εμφάνιση των δεδομένων
-                st.markdown("**Structural Analysis Summary**")
+                st.subheader("📋 Structural Analysis")
                 summary_df = pd.DataFrame({
                     "Variable": ["Total Fixed Costs", "Volume Analyzed", "Stressed Unit Cost"],
                     "Value": [f"${fixed:,.2f}", f"{int(volume)} units", f"${cost:,.2f}"]
                 })
                 st.table(summary_df)
+            
+            with col_right:
+                st.subheader("💡 Pricing Strategy")
+                req_price = (fixed / volume) + cost if volume > 0 else 0
                 
-                # Το κρίσιμο συμπέρασμα σε μπλε πλαίσιο
                 st.info(f"""
-                **Pricing Goal:**
-                To cover your costs and target profit at a volume of **{int(volume)}** units:
+                **Pricing Requirement:**
+                To break even at a volume of **{int(volume)}** units:
                 
-                Your minimum price must be: **${req_price:,.2f}**
+                Minimum Price Needed: **${req_price:,.2f}**
                 """)
                 
                 
 
-                # Operational status check
                 if volume < bep_units:
-                    gap = bep_units - volume
-                    st.error(f"⚠️ **STATUS: DEFICIT** \nYou are **{int(gap)} units below** break-even.")
+                    st.error(f"⚠️ **DEFICIT:** You are **{int(bep_units - volume)} units short** of break-even.")
                 else:
-                    surplus = volume - bep_units
-                    st.success(f"✅ **STATUS: SURPLUS** \nYou are **{int(surplus)} units above** break-even.")
+                    st.success(f"✅ **SURPLUS:** You are **{int(volume - bep_units)} units above** break-even.")
 
         except Exception as e:
-            st.error(f"System Error: {e}")
+            st.error(f"Analysis Error: {e}")
 
-# Επιτρέπει στο εργαλείο να τρέξει και μόνο του
 if __name__ == "__main__":
     show_break_even_shift_calculator()
