@@ -224,14 +224,14 @@ def show_break_even_shift_calculator():
                 st.error("🔴 High-risk decision — survival threshold jumps")
 
             plot_break_even_shift(
-                fixed_costs,
+                fixed_costs + target_profit,
                 new_investment,
                 old_price,
                 new_price,
                 old_unit_cost,
                 new_unit_cost,
                 units_sold
-            )
+                )
 
         except Exception as e:
             st.error(f"Input error: {e}")
