@@ -125,6 +125,14 @@ def show_break_even_shift_calculator():
             "(equipment, hiring, software, expansion). "
             "Enter 0 if this decision requires no new investment."
         )
+                target_profit_input = st.text_input(
+            "Target profit per period (leave 0 if none)",
+            "0.00"
+        )
+        st.caption(
+            "Optional. Enter the profit you want to generate per period. "
+            "This amount will be added to fixed costs to calculate the break-even with profit."
+        )
 
         old_price_input = st.text_input(
             "Current selling price per unit",
@@ -177,6 +185,7 @@ def show_break_even_shift_calculator():
         try:
             fixed_costs = parse_number_en(fixed_costs_input)
             new_investment = parse_number_en(new_investment_input)
+            target_profit = parse_number_en(target_profit_input)
             old_price = parse_number_en(old_price_input)
             new_price = parse_number_en(new_price_input)
             old_unit_cost = parse_number_en(old_unit_cost_input)
@@ -184,7 +193,7 @@ def show_break_even_shift_calculator():
             units_sold = parse_number_en(units_sold_input)
 
             old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
-                fixed_costs,
+                fixed_costs + target_profit,
                 new_investment,
                 old_price,
                 new_price,
@@ -192,6 +201,7 @@ def show_break_even_shift_calculator():
                 new_unit_cost,
                 units_sold
             )
+
 
             if percent_change is None:
                 st.error(
