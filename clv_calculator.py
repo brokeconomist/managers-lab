@@ -1,136 +1,139 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import io
 
-# --- Helper functions ---
-def parse_number_en(number_str):
-    return float(number_str)
+# -------------------------------------------------
+# 1. ΡΥΘΜΙΣΗ ΣΕΛΙΔΑΣ
+# -------------------------------------------------
+st.set_page_config(
+    page_title="Strategic CLV Analyzer",
+    page_icon="📈",
+    layout="wide"
+)
 
-def format_number_en(number, decimals=2):
-    return f"{number:,.{decimals}f}"
-
-def format_percentage_en(number, decimals=1):
-    return f"{number*100:.{decimals}f}%"
-
-# --- CLV Calculation ---
-def calculate_clv_discounted(
-    purchases_per_period,
-    price_per_purchase,
-    cost_per_purchase,
-    marketing_cost_per_period,
-    retention_years,
-    discount_rate
-):
-    try:
-        net_margin_per_period = (purchases_per_period * (price_per_purchase - cost_per_purchase)) - marketing_cost_per_period
-        if discount_rate == 0:
-            clv = net_margin_per_period * retention_years
-        else:
-            discount_factor = (1 - (1 + discount_rate) ** (-retention_years)) / discount_rate
-            clv = net_margin_per_period * discount_factor
-        return clv
-    except Exception:
-        return None
-
-# --- Tornado Chart Data ---
-def tornado_data(clv_base, params, delta=0.1):
-    results = []
-    for key, value in params.items():
-        if value is None or value == 0:
-            continue
-        params_plus = params.copy()
-        params_plus[key] = value * (1 + delta)
-        clv_plus = calculate_clv_discounted(**params_plus)
-
-        params_minus = params.copy()
-        params_minus[key] = value * (1 - delta)
-        clv_minus = calculate_clv_discounted(**params_minus)
-
-        pct_plus = ((clv_plus - clv_base) / clv_base) * 100 if clv_base != 0 else 0
-        pct_minus = ((clv_minus - clv_base) / clv_base) * 100 if clv_base != 0 else 0
-
-        results.append({
-            "Parameter": key,
-            "Change": f"+{int(delta*100)}%",
-            "Impact (%)": pct_plus
+# -------------------------------------------------
+# 2. ΣΥΝΑΡΤΗΣΕΙΣ ΥΠΟΛΟΓΙΣΜΩΝ
+# -------------------------------------------------
+def calculate_clv_metrics(purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac):
+    cm = (purchases * (price - cost)) - marketing
+    adj_discount = discount + risk_p
+    clv = 0
+    data = []
+    cum_npv = -cac
+    payback = None
+    
+    for t in range(1, int(retention) + 1):
+        survival_prob = (1 - churn) ** t
+        expected_m = cm * realization * survival_prob
+        discounted_m = expected_m / ((1 + adj_discount) ** t)
+        
+        clv += discounted_m
+        cum_npv += discounted_m
+        
+        data.append({
+            "Year": t,
+            "Net_Margin": expected_m,
+            "Discounted_Flow": discounted_m,
+            "Cumulative_NPV": cum_npv
         })
-        results.append({
-            "Parameter": key,
-            "Change": f"-{int(delta*100)}%",
-            "Impact (%)": pct_minus
-        })
+        
+        if cum_npv >= 0 and payback is None:
+            payback = t
+            
+    return clv - cac, payback, pd.DataFrame(data)
 
-    mapping = {
-        "purchases_per_period": "Purchases per Period",
-        "price_per_purchase": "Price per Purchase",
-        "cost_per_purchase": "Cost per Purchase",
-        "marketing_cost_per_period": "Marketing Cost per Period",
-        "retention_years": "Customer Retention (Years)",
-        "discount_rate": "Discount Rate"
-    }
+# -------------------------------------------------
+# 3. UI & SIDEBAR
+# -------------------------------------------------
+def main():
+    st.title("Strategic Customer Lifetime Value (CLV) Analyzer")
+    st.caption("Professional Business Modeling Tool for Unit Economics")
+    st.divider()
 
-    df = pd.DataFrame(results)
-    df["Parameter"] = df["Parameter"].map(mapping)
-    return df
+    with st.sidebar:
+        st.header("⚙️ Παράμετροι Μοντέλου")
+        with st.form("main_form"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                purchases = st.number_input("Purchases/Year", 1.0, 1000.0, 10.0)
+                price = st.number_input("Price ($)", 0.0, 100000.0, 100.0)
+                cost = st.number_input("Unit Cost ($)", 0.0, 100000.0, 60.0)
+            with col_b:
+                marketing = st.number_input("Retent. Cost ($)", 0.0, 10000.0, 20.0)
+                cac = st.number_input("Acquis. Cost (CAC)", 0.0, 100000.0, 150.0)
+                retention = st.slider("Horizon (Years)", 1, 20, 5)
+            
+            st.subheader("⚠️ Risk Factors")
+            discount = st.number_input("Discount Rate", 0.0, 1.0, 0.08)
+            churn = st.number_input("Churn Rate", 0.0, 1.0, 0.05)
+            realization = st.number_input("Realization", 0.0, 1.0, 0.90)
+            risk_p = st.number_input("Risk Premium", 0.0, 1.0, 0.03)
+            
+            run = st.form_submit_button("Ανάλυση & Αναφορά")
 
-# --- Streamlit UI ---
-def show_clv_calculator():
-    st.title("👥 Customer Lifetime Value (CLV) Calculator — Discounted")
+    if run:
+        # Εκτέλεση Υπολογισμών
+        final_clv, payback, df = calculate_clv_metrics(
+            purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac
+        )
+        
+        ltv_total = final_clv + cac
+        ratio = ltv_total / cac if cac > 0 else 0
 
-    purchases_str = st.text_input("Expected purchases per period (e.g., year)", "10")
-    price_str = st.text_input("Price per purchase ($)", "100")
-    cost_str = st.text_input("Cost per purchase ($)", "60")
-    marketing_str = st.text_input("Marketing cost per period ($)", "20")
-    retention_str = st.text_input("Estimated customer retention (years)", "5")
-    discount_str = st.text_input("Discount rate (e.g., 0.05 for 5%)", "0.05")
+        # 4. ΕΜΦΑΝΙΣΗ ΑΠΟΤΕΛΕΣΜΑΤΩΝ (DASHBOARD)
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Risk-Adjusted CLV", f"${final_clv:,.2f}")
+        k2.metric("LTV/CAC Ratio", f"{ratio:.2f}x")
+        k3.metric("Payback Period", f"{payback} Yrs" if payback else "N/A")
+        
+        status = "Healthy" if ratio >= 3 else "Moderate" if ratio >= 1 else "Critical"
+        k4.markdown(f"**Status:** `{status}`")
 
-    purchases = parse_number_en(purchases_str)
-    price = parse_number_en(price_str)
-    cost = parse_number_en(cost_str)
-    marketing = parse_number_en(marketing_str)
-    retention = parse_number_en(retention_str)
-    discount = parse_number_en(discount_str)
+        st.divider()
 
-    if None in [purchases, price, cost, marketing, retention, discount]:
-        st.error("Please enter valid numbers in all fields.")
-        return
+        # ΓΡΑΦΗΜΑΤΑ
+        c1, c2 = st.columns([2, 1])
+        
+        with c1:
+            st.subheader("Timeline of Customer Value")
+            fig = px.line(df, x="Year", y="Cumulative_NPV", markers=True, 
+                          title="Cumulative Net Present Value (NPV)")
+            fig.add_hline(y=0, line_dash="dash", line_color="red")
+            st.plotly_chart(fig, use_container_width=True)
+            
 
-    clv = calculate_clv_discounted(
-        purchases_per_period=purchases,
-        price_per_purchase=price,
-        cost_per_purchase=cost,
-        marketing_cost_per_period=marketing,
-        retention_years=retention,
-        discount_rate=discount,
-    )
+        with c2:
+            st.subheader("📋 Executive Summary")
+            report = f"""
+            **Στρατηγική Αξιολόγηση:**
+            - **Κερδοφορία:** Κάθε πελάτης αποφέρει καθαρά **${final_clv:,.2f}**.
+            - **Αποδοτικότητα:** Το ratio **{ratio:.2f}x** δείχνει ότι το μοντέλο είναι **{status}**.
+            - **Απόσβεση:** Χρειάζονται **{payback if payback else 'πάνω από ' + str(retention)}** έτη για να καλυφθεί το κόστος απόκτησης.
+            
+            **Σύσταση:**
+            {"✅ Το μοντέλο είναι έτοιμο για scaling." if ratio >= 3 else "⚠️ Απαιτείται βελτίωση στο Retention ή μείωση του CAC."}
+            """
+            st.info(report)
+            
+            # DOWNLOAD DATA
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download Yearly Analysis (CSV)", data=csv, 
+                               file_name="clv_analysis.csv", mime="text/csv")
 
-    if clv is None:
-        st.error("Error in calculation. Check input values.")
-        return
+        # 5. COHORT COMPARISON (SENSITIVITY)
+        st.subheader("🔍 Sensitivity Analysis (What-If Scenarios)")
+        col_s1, col_s2 = st.columns(2)
+        
+        with col_s1:
+            st.write("**Scenario: -10% Churn Rate**")
+            clv_opt, _, _ = calculate_clv_metrics(purchases, price, cost, marketing, retention, discount, churn * 0.9, realization, risk_p, cac)
+            st.success(f"New CLV: ${clv_opt:,.2f} (Δ: {((clv_opt-final_clv)/final_clv)*100:+.1f}%)")
 
-    st.success(f"Estimated Net Present Value of Customer: {format_number_en(clv)} $")
+        with col_s2:
+            st.write("**Scenario: +10% Price Increase**")
+            clv_price, _, _ = calculate_clv_metrics(purchases, price * 1.1, cost, marketing, retention, discount, churn, realization, risk_p, cac)
+            st.success(f"New CLV: ${clv_price:,.2f} (Δ: {((clv_price-final_clv)/final_clv)*100:+.1f}%)")
 
-    # Tornado Chart
-    st.subheader("📊 Sensitivity Analysis (Tornado Chart)")
-
-    params = {
-        "purchases_per_period": purchases,
-        "price_per_purchase": price,
-        "cost_per_purchase": cost,
-        "marketing_cost_per_period": marketing,
-        "retention_years": retention,
-        "discount_rate": discount,
-    }
-
-    df_tornado = tornado_data(clv, params, delta=0.1)
-
-    fig = px.bar(
-        df_tornado,
-        x="Impact (%)",
-        y="Parameter",
-        color="Change",
-        orientation="h",
-        title="CLV Sensitivity to Parameter Changes",
-        height=500
-    )
-    st.plotly_chart(fig, use_container_width=True)
+if __name__ == "__main__":
+    main()
