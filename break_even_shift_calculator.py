@@ -161,7 +161,7 @@ def show_break_even_shift_calculator():
                 # --- MARGIN OF SAFETY ---
                 if units_sold > 0:
                     mos_units = units_sold - new_bep
-                    mos_percent = mos_units / units_sold
+                    mos_percent = (units_sold - new_bep) / units_sold
                     
                     st.subheader("🛡️ Margin of Safety")
                     if mos_percent > 0:
