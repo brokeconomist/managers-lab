@@ -150,7 +150,20 @@ def show_break_even_shift_calculator():
             suggested_price = (
                     (fixed_costs + new_investment + target_profit) / units_sold
                 ) + new_unit_cost
-         
+
+            # -----------------------------------------
+            # Required units at current price
+            # -----------------------------------------
+
+            required_units_current_price = None
+
+            current_cm = new_price - new_unit_cost
+
+            if current_cm > 0:
+                required_units_current_price = (
+                    fixed_costs + new_investment + target_profit
+                ) / current_cm
+
             # -----------------------------------------
 
             old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
@@ -172,7 +185,7 @@ def show_break_even_shift_calculator():
             st.success(f"New break-even after decision: {format_number_en(new_bep, 0)} units")
 
             # --- ΠΡΟΣΘΗΚΗ 2: Display Suggested Price (Μετά τα break even results) ---
-            if suggested_price is not None:
+            if suggested_price is not None and units_sold < new_bep:
                 st.markdown("---")
                 st.subheader("💡 Dynamic Pricing Suggestion")
 
