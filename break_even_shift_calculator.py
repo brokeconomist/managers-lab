@@ -172,7 +172,7 @@ def show_break_even_shift_calculator():
                         st.warning("You are currently below the break-even point for this new scenario.")
 
             with col2:
-                if suggested_price:
+                if suggested_price and units_sold < new_bep:
                     st.subheader("💡 Dynamic Pricing Suggestion")
                     st.info(f"Target Price: **{format_number_en(suggested_price, 2)} USD**")
                     st.caption(f"Price needed to hit {format_number_en(target_profit, 0)} USD profit with current volume.")
