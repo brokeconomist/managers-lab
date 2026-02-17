@@ -146,11 +146,11 @@ def show_break_even_shift_calculator():
             units_sold = parse_number_en(units_sold_input)
 
             # --- ΠΡΟΣΘΗΚΗ 1: Dynamic pricing suggestion (Μετά τα parsing) ---
-            suggested_price = None
-            if units_sold > 0:
-                suggested_price = (
-                    (fixed_costs + target_profit) / units_sold
+            
+            suggested_price = (
+                    (fixed_costs + new_investment + target_profit) / units_sold
                 ) + new_unit_cost
+            
             # -----------------------------------------
 
             old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
