@@ -177,7 +177,7 @@ def show_break_even_shift_calculator():
                     st.info(f"Target Price: **{format_number_en(suggested_price, 2)} USD**")
                     st.caption(f"Price needed to hit {format_number_en(target_profit, 0)} USD profit with current volume.")
 
-                if required_units_current_price:
+                if required_units_current_price is not None:
                     st.subheader("📊 Volume Requirement")
                     st.write(f"Required units at {new_price} USD: **{format_number_en(required_units_current_price, 0)}**")
                     gap = required_units_current_price - units_sold
