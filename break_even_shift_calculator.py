@@ -198,6 +198,38 @@ def show_break_even_shift_calculator():
                 st.success(
                     f"Suggested price per unit: {format_number_en(suggested_price,2)} USD"
                 )
+
+            
+                        # -----------------------------------------
+            # Required units at current price
+            # -----------------------------------------
+
+            if required_units_current_price is not None:
+                st.markdown("---")
+                st.subheader("📊 Volume Required at Current Price")
+
+                st.markdown(
+                    f"At a selling price of **{format_number_en(new_price,2)} USD**, "
+                    f"you must sell approximately:"
+                )
+
+                st.success(
+                    f"{format_number_en(required_units_current_price,0)} units "
+                    f"to generate {format_number_en(target_profit,0)} USD profit."
+                )
+
+                volume_gap = required_units_current_price - units_sold
+
+                if volume_gap > 0:
+                    st.warning(
+                        f"You need {format_number_en(volume_gap,0)} additional units "
+                        f"above your current sales level."
+                    )
+                else:
+                    st.success(
+                        "Current sales volume already covers the target profit."
+                    )      
+            
             # -----------------------------------------
 
             st.markdown(f"- **Additional units required:** {format_number_en(units_change,0)}")
