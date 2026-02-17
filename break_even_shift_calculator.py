@@ -125,7 +125,7 @@ def show_break_even_shift_calculator():
             "(equipment, hiring, software, expansion). "
             "Enter 0 if this decision requires no new investment."
         )
-                target_profit_input = st.text_input(
+        target_profit_input = st.text_input(
             "Target profit per period (leave 0 if none)",
             "0.00"
         )
