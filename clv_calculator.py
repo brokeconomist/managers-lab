@@ -1,118 +1,110 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import io
+import plotly.graph_objects as go
 
-# -------------------------------------------------
-# 1. ΣΥΝΑΡΤΗΣΕΙΣ ΥΠΟΛΟΓΙΣΜΩΝ (Internal)
-# -------------------------------------------------
-def calculate_clv_metrics(purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac):
+# --- 1. Υπολογιστική Μηχανή (Internal Logic) ---
+def get_clv_timeline(purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac):
     cm = (purchases * (price - cost)) - marketing
-    adj_discount = discount + risk_p
-    clv = 0
-    data = []
+    adj_disc = discount + risk_p
     cum_npv = -cac
+    data = []
     payback = None
     
     for t in range(1, int(retention) + 1):
-        survival_prob = (1 - churn) ** t
-        expected_m = cm * realization * survival_prob
-        discounted_m = expected_m / ((1 + adj_discount) ** t)
-        
-        clv += discounted_m
-        cum_npv += discounted_m
-        
-        data.append({
-            "Year": t,
-            "Net_Margin": expected_m,
-            "Discounted_Flow": discounted_m,
-            "Cumulative_NPV": cum_npv
-        })
-        
+        survival = (1 - churn) ** t
+        # Discounted Cash Flow formula
+        flow = (cm * realization * survival) / ((1 + adj_disc) ** t)
+        cum_npv += flow
+        data.append({"Year": t, "Cumulative_NPV": cum_npv})
         if cum_npv >= 0 and payback is None:
             payback = t
-            
-    return clv - cac, payback, pd.DataFrame(data)
+    return pd.DataFrame(data), cum_npv, payback
 
-# -------------------------------------------------
-# 2. Η ΚΥΡΙΑ ΣΥΝΑΡΤΗΣΗ (Που καλεί το app.py)
-# -------------------------------------------------
+# --- 2. Η Κύρια Συνάρτηση (Exported to app.py) ---
 def show_clv_calculator():
-    st.title("Strategic Customer Lifetime Value (CLV) Analyzer")
-    st.caption("Professional Business Modeling Tool for Unit Economics")
+    st.title("👥 Strategic CLV & Scenario Planner")
+    st.markdown("""
+    Αυτό το εργαλείο συγκρίνει δύο επιχειρηματικά σενάρια για να αναδείξει πώς μικρές αλλαγές στο 
+    **Churn** ή στην **Τιμή** επηρεάζουν την τελική αξία της επιχείρησης.
+    """)
     st.divider()
 
-    # Sidebar inputs
+    # --- Sidebar Inputs ---
     with st.sidebar:
-        st.header("⚙️ Παράμετροι Μοντέλου")
-        with st.form("main_form"):
-            col_a, col_b = st.columns(2)
-            with col_a:
-                purchases = st.number_input("Purchases/Year", 1.0, 1000.0, 10.0)
-                price = st.number_input("Price ($)", 0.0, 100000.0, 100.0)
-                cost = st.number_input("Unit Cost ($)", 0.0, 100000.0, 60.0)
-            with col_b:
-                marketing = st.number_input("Retent. Cost ($)", 0.0, 10000.0, 20.0)
-                cac = st.number_input("Acquis. Cost (CAC)", 0.0, 100000.0, 150.0)
-                retention = st.slider("Horizon (Years)", 1, 20, 5)
-            
-            st.subheader("⚠️ Risk Factors")
-            discount = st.number_input("Discount Rate", 0.0, 1.0, 0.08)
-            churn = st.number_input("Churn Rate", 0.0, 1.0, 0.05)
-            realization = st.number_input("Realization", 0.0, 1.0, 0.90)
-            risk_p = st.number_input("Risk Premium", 0.0, 1.0, 0.03)
-            
-            run = st.form_submit_button("Ανάλυση & Αναφορά")
+        st.header("📊 Σενάριο Α (Current)")
+        p_a = st.number_input("Purchases/Year (A)", value=10.0)
+        pr_a = st.number_input("Price (A) $", value=100.0)
+        cac_a = st.number_input("Acquisition Cost (A) $", value=150.0)
+        ch_a = st.number_input("Churn Rate (A) %", value=0.05)
+
+        st.header("🚀 Σενάριο Β (Target)")
+        p_b = st.number_input("Purchases/Year (B)", value=10.0)
+        pr_b = st.number_input("Price (B) $", value=110.0)
+        cac_b = st.number_input("Acquisition Cost (B) $", value=150.0)
+        ch_b = st.number_input("Churn Rate (B) %", value=0.03)
+
+        st.divider()
+        ret = st.slider("Retention Horizon (Years)", 1, 15, 5)
+        # Σταθερές παραμέτρων
+        cost, mkt, disc, real, risk_p = 60.0, 20.0, 0.08, 0.90, 0.03
+        run = st.button("Generate Comparison Report")
 
     if run:
-        final_clv, payback, df = calculate_clv_metrics(
-            purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac
-        )
+        # Εκτέλεση Υπολογισμών
+        df_a, final_a, pb_a = get_clv_timeline(p_a, pr_a, cost, mkt, ret, disc, ch_a, real, risk_p, cac_a)
+        df_b, final_b, pb_b = get_clv_timeline(p_b, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
+
+        # --- Οπτικοποίηση: Cumulative NPV Comparison ---
+        st.subheader("📉 Σύγκριση Κερδοφορίας (Cash Flow Timeline)")
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_a['Year'], y=df_a['Cumulative_NPV'], name='Σενάριο Α (Current)', line=dict(color='#EF553B', dash='dash')))
+        fig.add_trace(go.Scatter(x=df_b['Year'], y=df_b['Cumulative_NPV'], name='Σενάριο Β (Optimized)', line=dict(color='#00CC96', width=4)))
+        fig.add_hline(y=0, line_dash="dot", line_color="black")
         
-        ltv_total = final_clv + cac
-        ratio = ltv_total / cac if cac > 0 else 0
-
-        # Metrics
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Risk-Adjusted CLV", f"${final_clv:,.2f}")
-        k2.metric("LTV/CAC Ratio", f"{ratio:.2f}x")
-        k3.metric("Payback Period", f"{payback} Yrs" if payback else "N/A")
+        st.plotly_chart(fig, use_container_width=True)
         
-        status = "Healthy" if ratio >= 3 else "Moderate" if ratio >= 1 else "Critical"
-        k4.markdown(f"**Status:** `{status}`")
-        st.divider()
 
-        # Graphs
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            st.subheader("Timeline of Customer Value")
-            fig = px.line(df, x="Year", y="Cumulative_NPV", markers=True, title="Cumulative NPV Over Time")
-            fig.add_hline(y=0, line_dash="dash", line_color="red")
-            st.plotly_chart(fig, use_container_width=True)
-            
-
-        with c2:
+        # --- Ανάλυση & Εξηγήσεις ---
+        col1, col2 = st.columns(2)
+        
+        with col1:
             st.subheader("📋 Executive Summary")
-            st.info(f"""
-            **Στρατηγική Αξιολόγηση:**
-            - Κάθε πελάτης αποφέρει καθαρά **${final_clv:,.2f}**.
-            - Το ratio **{ratio:.2f}x** είναι **{status}**.
-            - Απόσβεση σε **{payback if payback else '>'+str(retention)}** έτη.
+            st.write(f"""
+            **1. Value Gap:** Η βελτιστοποίηση του μοντέλου προσφέρει επιπλέον **${final_b - final_a:,.2f}** ανά πελάτη.
+            **2. Payback Period:** - Σενάριο Α: Απόσβεση σε **{pb_a if pb_a else '>'+str(ret)} έτη**.
+            - Σενάριο Β: Απόσβεση σε **{pb_b if pb_b else '>'+str(ret)} έτη**.
             """)
             
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Download CSV", data=csv, file_name="clv_analysis.csv")
+            ltv_a = (final_a + cac_a) / cac_a if cac_a > 0 else 0
+            ltv_b = (final_b + cac_b) / cac_b if cac_b > 0 else 0
+            
+            st.metric("Βελτίωση LTV/CAC Ratio", f"{ltv_b:.2f}x", f"{ltv_b - ltv_a:.2f}x")
+            
 
-        # Sensitivity
-        st.subheader("🔍 Sensitivity Analysis")
-        s1, s2 = st.columns(2)
-        with s1:
-            clv_opt, _, _ = calculate_clv_metrics(purchases, price, cost, marketing, retention, discount, churn * 0.9, realization, risk_p, cac)
-            st.success(f"With -10% Churn: ${clv_opt:,.2f}")
-        with s2:
-            clv_price, _, _ = calculate_clv_metrics(purchases, price * 1.1, cost, marketing, retention, discount, churn, realization, risk_p, cac)
-            st.success(f"With +10% Price: ${clv_price:,.2f}")
+        with col2:
+            st.subheader("💡 Τι σημαίνουν αυτά τα νούμερα;")
+            with st.expander("Τι είναι το Payback Period;", expanded=True):
+                st.write("""
+                Είναι ο χρόνος που απαιτείται για να καλύψει ο πελάτης το κόστος απόκτησής του (CAC). 
+                Όσο πιο γρήγορα η γραμμή περάσει το μηδέν, τόσο λιγότερο κεφάλαιο κίνησης χρειάζεται η επιχείρηση.
+                """)
+            
+            with st.expander("Γιατί το Risk-Adjusted CLV είναι χαμηλότερο;"):
+                st.write(f"""
+                Factor-In: Έχουμε συμπεριλάβει **Churn ({ch_a*100}%)** και **Realization ({real*100}%)**. 
+                Αυτό σημαίνει ότι υπολογίζουμε την "ψυχρή αλήθεια": ότι κάποιοι πελάτες θα φύγουν και κάποια έσοδα 
+                δεν θα εισπραχθούν ποτέ.
+                """)
 
-# Επιτρέπει το τοπικό testing
+        # --- Πίνακας Δεδομένων ---
+        st.subheader("📊 Συγκριτικός Πίνακας Metrics")
+        comparison_df = pd.DataFrame({
+            "Metric": ["Net Lifetime Value", "Payback Period", "LTV/CAC Ratio", "Risk Exposure"],
+            "Scenario A": [f"${final_a:,.2f}", f"{pb_a} Yrs", f"{ltv_a:.2f}x", "High"],
+            "Scenario B": [f"${final_b:,.2f}", f"{pb_b} Yrs", f"{ltv_b:.2f}x", "Low"]
+        })
+        st.table(comparison_df)
+
+# Boilerplate για αυτόνομη εκτέλεση
 if __name__ == "__main__":
     show_clv_calculator()
