@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. Υπολογιστική Μηχανή
+# 1. Calculation Engine
 def get_clv_data(purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac):
     cm = (purchases * (price - cost)) - marketing
     adj_disc = discount + risk_p
@@ -20,35 +20,35 @@ def get_clv_data(purchases, price, cost, marketing, retention, discount, churn, 
             payback = t
     return pd.DataFrame(data), cum_npv, payback
 
-# 2. Η συνάρτηση που καλεί το app.py (Imported Function)
+# 2. Main Function (Imported by app.py)
 def show_clv_calculator():
     st.title("👥 Strategic CLV & Scenario Comparison")
     st.markdown("---")
     
-    # Επεξήγηση Μοντέλου
+    # Model Explanation
     st.info("""
-    **Ανάλυση CLV:** Υπολογίζουμε την καθαρή παρούσα αξία ενός πελάτη, προσαρμοσμένη στον κίνδυνο (Risk-Adjusted). 
-    Συγκρίνουμε το **Σενάριο Α (Current)** με το **Σενάριο Β (Target)** για να βρούμε το **Value Gap**.
+    **CLV Analysis:** We calculate the Net Present Value (NPV) of a customer, adjusted for uncertainty (**Risk-Adjusted**). 
+    Compare **Scenario A (Current)** with **Scenario B (Target)** to identify the **Value Gap**.
     """)
 
-    # Παράμετροι σε Columns
+    # Input Parameters in Columns
     col_input1, col_input2 = st.columns(2)
     
     with col_input1:
-        st.subheader("📊 Σενάριο Α (Current)")
+        st.subheader("📊 Scenario A (Current)")
         p_a = st.number_input("Purchases/Year (A)", value=10.0, key="p_a")
-        pr_a = st.number_input("Price (A) $", value=100.0, key="pr_a")
-        cac_a = st.number_input("CAC (A) $", value=150.0, key="cac_a")
-        ch_a = st.number_input("Churn Rate (A) (π.χ. 0.05)", value=0.05, key="ch_a")
+        pr_a = st.number_input("Price per Purchase (A) $", value=100.0, key="pr_a")
+        cac_a = st.number_input("Acquisition Cost (CAC) (A) $", value=150.0, key="cac_a")
+        ch_a = st.number_input("Churn Rate (A) (e.g., 0.05)", value=0.05, key="ch_a")
 
     with col_input2:
-        st.subheader("🚀 Σενάριο Β (Target)")
+        st.subheader("🚀 Scenario B (Target)")
         p_b = st.number_input("Purchases/Year (B)", value=10.0, key="p_b")
-        pr_b = st.number_input("Price (B) $", value=110.0, key="pr_b")
-        cac_b = st.number_input("CAC (B) $", value=150.0, key="cac_b")
-        ch_b = st.number_input("Churn Rate (B) (π.χ. 0.03)", value=0.03, key="ch_b")
+        pr_b = st.number_input("Price per Purchase (B) $", value=110.0, key="pr_b")
+        cac_b = st.number_input("Acquisition Cost (CAC) (B) $", value=150.0, key="cac_b")
+        ch_b = st.number_input("Churn Rate (B) (e.g., 0.03)", value=0.03, key="ch_b")
 
-    # Σταθερές Ρίσκου (Κοινές για τη σύγκριση)
+    # Risk Constants (Common for both scenarios)
     cost, mkt, disc, real, risk_p = 60.0, 20.0, 0.08, 0.90, 0.03
     ret = 5
 
@@ -57,16 +57,17 @@ def show_clv_calculator():
         df_b, final_b, pb_b = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
 
         # 1. Timeline Chart
-        st.subheader("📉 Σύγκριση Σωρευτικής Κερδοφορίας")
+        st.subheader("📉 Cumulative Profitability Comparison (NPV)")
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=df_a['Year'], y=df_a['Cumulative_NPV'], name='Scenario A', line=dict(color='#EF553B', dash='dash')))
         fig.add_trace(go.Scatter(x=df_b['Year'], y=df_b['Cumulative_NPV'], name='Scenario B', line=dict(color='#00CC96', width=4)))
         fig.add_hline(y=0, line_dash="dot", line_color="white")
         st.plotly_chart(fig, use_container_width=True)
         
+        
 
         # 2. Executive Metrics
-        st.markdown("### 📋 Στρατηγική Ερμηνεία")
+        st.markdown("### 📋 Strategic Interpretation")
         m1, m2, m3 = st.columns(3)
         
         gap = final_b - final_a
@@ -78,18 +79,20 @@ def show_clv_calculator():
         
         m3.metric("Payback (Scenario B)", f"{pb_b} Years" if pb_b else "N/A")
         
+        
 
-        # 3. Επεξηγήσεις (Context)
-        with st.expander("🧐 Τι σημαίνουν αυτά τα αποτελέσματα;"):
+        # 3. Contextual Explanations
+        with st.expander("🧐 What do these results mean?"):
             st.write(f"""
-            - **Risk-Adjusted CLV:** Είναι η "ψυχρή" παρούσα αξία του πελάτη. Υπολογίζουμε ότι στο Σενάριο Β, κάθε πελάτης αξίζει **${final_b:,.2f}** καθαρά.
-            - **Value Gap:** Δείχνει πόση αξία "χάνεται" στο τρέχον μοντέλο (A) σε σχέση με το βελτιστοποιημένο (B). 
-            - **Payback Period:** Στο Σενάριο Β, αποσβένετε το κόστος απόκτησης στο έτος **{pb_b}**. Αυτό μειώνει το ρίσκο ρευστότητας.
+            - **Risk-Adjusted CLV:** This is the "cold" present value of the customer. In Scenario B, we estimate each customer is worth **${final_b:,.2f}** in net profit.
+            - **Value Gap:** Represents the value "left on the table" in your current model (A) compared to the optimized target (B). 
+            - **Payback Period:** In Scenario B, you recover the acquisition cost in Year **{pb_b}**. A shorter period reduces liquidity risk.
             """)
 
         # 4. Data Table
+        st.subheader("📊 Comparative Metrics Table")
         st.table(pd.DataFrame({
-            "Metric": ["Net Lifetime Value", "Payback Year", "LTV/CAC Ratio"],
-            "Scenario A": [f"${final_a:,.2f}", pb_a, f"{ltv_a:.2f}x"],
-            "Scenario B": [f"${final_b:,.2f}", pb_b, f"{ltv_b:.2f}x"]
+            "Metric": ["Net Lifetime Value (Risk Adjusted)", "Payback Year", "LTV/CAC Ratio"],
+            "Scenario A": [f"${final_a:,.2f}", pb_a if pb_a else "N/A", f"{ltv_a:.2f}x"],
+            "Scenario B": [f"${final_b:,.2f}", pb_b if pb_b else "N/A", f"{ltv_b:.2f}x"]
         }))
