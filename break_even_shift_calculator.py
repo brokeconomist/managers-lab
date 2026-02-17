@@ -150,7 +150,7 @@ def show_break_even_shift_calculator():
             suggested_price = (
                     (fixed_costs + new_investment + target_profit) / units_sold
                 ) + new_unit_cost
-            
+         
             # -----------------------------------------
 
             old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
