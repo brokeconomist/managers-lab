@@ -4,16 +4,7 @@ import plotly.express as px
 import io
 
 # -------------------------------------------------
-# 1. ΡΥΘΜΙΣΗ ΣΕΛΙΔΑΣ
-# -------------------------------------------------
-st.set_page_config(
-    page_title="Strategic CLV Analyzer",
-    page_icon="📈",
-    layout="wide"
-)
-
-# -------------------------------------------------
-# 2. ΣΥΝΑΡΤΗΣΕΙΣ ΥΠΟΛΟΓΙΣΜΩΝ
+# 1. ΣΥΝΑΡΤΗΣΕΙΣ ΥΠΟΛΟΓΙΣΜΩΝ (Internal)
 # -------------------------------------------------
 def calculate_clv_metrics(purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac):
     cm = (purchases * (price - cost)) - marketing
@@ -44,13 +35,14 @@ def calculate_clv_metrics(purchases, price, cost, marketing, retention, discount
     return clv - cac, payback, pd.DataFrame(data)
 
 # -------------------------------------------------
-# 3. UI & SIDEBAR
+# 2. Η ΚΥΡΙΑ ΣΥΝΑΡΤΗΣΗ (Που καλεί το app.py)
 # -------------------------------------------------
-def main():
+def show_clv_calculator():
     st.title("Strategic Customer Lifetime Value (CLV) Analyzer")
     st.caption("Professional Business Modeling Tool for Unit Economics")
     st.divider()
 
+    # Sidebar inputs
     with st.sidebar:
         st.header("⚙️ Παράμετροι Μοντέλου")
         with st.form("main_form"):
@@ -73,7 +65,6 @@ def main():
             run = st.form_submit_button("Ανάλυση & Αναφορά")
 
     if run:
-        # Εκτέλεση Υπολογισμών
         final_clv, payback, df = calculate_clv_metrics(
             purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac
         )
@@ -81,7 +72,7 @@ def main():
         ltv_total = final_clv + cac
         ratio = ltv_total / cac if cac > 0 else 0
 
-        # 4. ΕΜΦΑΝΙΣΗ ΑΠΟΤΕΛΕΣΜΑΤΩΝ (DASHBOARD)
+        # Metrics
         k1, k2, k3, k4 = st.columns(4)
         k1.metric("Risk-Adjusted CLV", f"${final_clv:,.2f}")
         k2.metric("LTV/CAC Ratio", f"{ratio:.2f}x")
@@ -89,51 +80,39 @@ def main():
         
         status = "Healthy" if ratio >= 3 else "Moderate" if ratio >= 1 else "Critical"
         k4.markdown(f"**Status:** `{status}`")
-
         st.divider()
 
-        # ΓΡΑΦΗΜΑΤΑ
+        # Graphs
         c1, c2 = st.columns([2, 1])
-        
         with c1:
             st.subheader("Timeline of Customer Value")
-            fig = px.line(df, x="Year", y="Cumulative_NPV", markers=True, 
-                          title="Cumulative Net Present Value (NPV)")
+            fig = px.line(df, x="Year", y="Cumulative_NPV", markers=True, title="Cumulative NPV Over Time")
             fig.add_hline(y=0, line_dash="dash", line_color="red")
             st.plotly_chart(fig, use_container_width=True)
             
 
         with c2:
             st.subheader("📋 Executive Summary")
-            report = f"""
+            st.info(f"""
             **Στρατηγική Αξιολόγηση:**
-            - **Κερδοφορία:** Κάθε πελάτης αποφέρει καθαρά **${final_clv:,.2f}**.
-            - **Αποδοτικότητα:** Το ratio **{ratio:.2f}x** δείχνει ότι το μοντέλο είναι **{status}**.
-            - **Απόσβεση:** Χρειάζονται **{payback if payback else 'πάνω από ' + str(retention)}** έτη για να καλυφθεί το κόστος απόκτησης.
+            - Κάθε πελάτης αποφέρει καθαρά **${final_clv:,.2f}**.
+            - Το ratio **{ratio:.2f}x** είναι **{status}**.
+            - Απόσβεση σε **{payback if payback else '>'+str(retention)}** έτη.
+            """)
             
-            **Σύσταση:**
-            {"✅ Το μοντέλο είναι έτοιμο για scaling." if ratio >= 3 else "⚠️ Απαιτείται βελτίωση στο Retention ή μείωση του CAC."}
-            """
-            st.info(report)
-            
-            # DOWNLOAD DATA
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Download Yearly Analysis (CSV)", data=csv, 
-                               file_name="clv_analysis.csv", mime="text/csv")
+            st.download_button("📥 Download CSV", data=csv, file_name="clv_analysis.csv")
 
-        # 5. COHORT COMPARISON (SENSITIVITY)
-        st.subheader("🔍 Sensitivity Analysis (What-If Scenarios)")
-        col_s1, col_s2 = st.columns(2)
-        
-        with col_s1:
-            st.write("**Scenario: -10% Churn Rate**")
+        # Sensitivity
+        st.subheader("🔍 Sensitivity Analysis")
+        s1, s2 = st.columns(2)
+        with s1:
             clv_opt, _, _ = calculate_clv_metrics(purchases, price, cost, marketing, retention, discount, churn * 0.9, realization, risk_p, cac)
-            st.success(f"New CLV: ${clv_opt:,.2f} (Δ: {((clv_opt-final_clv)/final_clv)*100:+.1f}%)")
-
-        with col_s2:
-            st.write("**Scenario: +10% Price Increase**")
+            st.success(f"With -10% Churn: ${clv_opt:,.2f}")
+        with s2:
             clv_price, _, _ = calculate_clv_metrics(purchases, price * 1.1, cost, marketing, retention, discount, churn, realization, risk_p, cac)
-            st.success(f"New CLV: ${clv_price:,.2f} (Δ: {((clv_price-final_clv)/final_clv)*100:+.1f}%)")
+            st.success(f"With +10% Price: ${clv_price:,.2f}")
 
+# Επιτρέπει το τοπικό testing
 if __name__ == "__main__":
-    main()
+    show_clv_calculator()
