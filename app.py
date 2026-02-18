@@ -35,33 +35,40 @@ st.set_page_config(
 # ----------------------------------------
 tool_categories = {
     "🏠 Home": [("Home", show_home)],
-    "💡 Getting Started": [("Start Here", show_start_here)],
+
+    "💡 Getting Started": [
+        ("Start Here", show_start_here),
+    ],
+
     "📈 Break-Even & Pricing": [
         ("Break-Even Shift Analysis", show_break_even_shift_calculator),
         ("Loss Threshold Before Price Cut", show_loss_threshold_before_price_cut),
+        ("Pricing Power Radar", show_pricing_power_radar),  # ✅ ΠΡΟΣΤΕΘΗΚΕ ΣΩΣΤΑ
     ],
+
     "👥 Customer Value": [
         ("CLV Analysis", show_clv_calculator),
         ("Strategic Substitution Analysis", show_substitutes_sensitivity_tool),
         ("Complementary Product Analysis", show_complementary_analysis),
-        elif selected == "Pricing Power Radar":
-        show_pricing_power_radar()
-
     ],
+
     "💰 Finance & Cash Flow": [
         ("Cash Cycle Calculator", run_cash_cycle_app),
         ("Credit Policy Analysis", show_credit_policy_analysis),
         ("Supplier Payment Analysis", show_supplier_credit_analysis),
         ("Loan vs Leasing Analysis", loan_vs_leasing_ui),
     ],
+
     "📊 Cost & Profit": [
         ("Unit Cost Calculator", show_unit_cost_app),
         ("Discount NPV Analysis", show_discount_npv_ui),
     ],
+
     "📦 Inventory & Operations": [
         ("Credit Days Calculator", show_credit_days_calculator),
         ("Inventory Turnover Analysis", show_inventory_turnover_calculator),
     ],
+
     "🧭 Strategy & Decision": [
         ("QSPM – Strategy Comparison", show_qspm_tool),
     ],
@@ -82,13 +89,14 @@ if "selected_tool" not in st.session_state:
 st.sidebar.title("🧪 Managers’ Lab")
 
 category_keys = list(tool_categories.keys())
+
 selected_category = st.sidebar.selectbox(
     "Select category",
     category_keys,
     index=category_keys.index(st.session_state.selected_category)
 )
 
-# Reset tool to first in category if category changed
+# Reset tool if category changes
 if selected_category != st.session_state.selected_category:
     st.session_state.selected_category = selected_category
     st.session_state.selected_tool = tool_categories[selected_category][0][0]
@@ -107,7 +115,10 @@ st.session_state.selected_tool = selected_tool
 # ----------------------------------------
 # Back to Home button
 # ----------------------------------------
-if not (st.session_state.selected_category == "🏠 Home" and st.session_state.selected_tool == "Home"):
+if not (
+    st.session_state.selected_category == "🏠 Home"
+    and st.session_state.selected_tool == "Home"
+):
     if st.sidebar.button("← Back to Lab"):
         st.session_state.selected_category = "🏠 Home"
         st.session_state.selected_tool = "Home"
