@@ -1,200 +1,215 @@
 import streamlit as st
 import matplotlib.pyplot as plt
-import pandas as pd
 
-# -----------------------
-# Utilities
-# -----------------------
+# -------------------------------------------------
+# Helper functions
+# -------------------------------------------------
 
 def parse_number_en(number_str):
-    try:
-        return float(str(number_str).replace(",", ""))
-    except:
-        return 0.0
+    return float(number_str)
+
+def format_number_en(number, decimals=2):
+    return f"{number:,.{decimals}f}"
+
+def format_percentage_en(number, decimals=1):
+    return f"{number*100:.{decimals}f}%"
 
 
-# -----------------------
-# Plotting Logic
-# -----------------------
+# -------------------------------------------------
+# Core calculations (DO NOT CHANGE LOGIC)
+# -------------------------------------------------
 
-def plot_break_even(fixed_costs, target_profit, price, unit_cost, units_sold):
-    cm = price - unit_cost
-    if cm <= 0:
-        return
+def calculate_break_even_shift(
+    fixed_costs,
+    new_investment,
+    old_price,
+    new_price,
+    old_unit_cost,
+    new_unit_cost,
+    units_sold
+):
+    old_cm = old_price - old_unit_cost
+    new_cm = new_price - new_unit_cost
 
-    required_units = (fixed_costs + target_profit) / cm
+    if old_cm <= 0 or new_cm <= 0:
+        return None, None, None, None
 
-    max_units = int(max(required_units, units_sold) * 1.6) + 10
+    total_fixed_old = fixed_costs
+    total_fixed_new = fixed_costs + new_investment
+
+    old_break_even = total_fixed_old / old_cm
+    new_break_even = total_fixed_new / new_cm
+
+    percent_change = (new_break_even - old_break_even) / old_break_even
+    units_change = new_break_even - old_break_even
+
+    return old_break_even, new_break_even, percent_change, units_change
+
+
+# -------------------------------------------------
+# Plot
+# -------------------------------------------------
+
+def plot_break_even_shift(
+    fixed_costs,
+    new_investment,
+    old_price,
+    new_price,
+    old_unit_cost,
+    new_unit_cost,
+    units_sold
+):
+    old_cm = old_price - old_unit_cost
+    new_cm = new_price - new_unit_cost
+
+    total_fixed_old = fixed_costs
+    total_fixed_new = fixed_costs + new_investment
+
+    bep_old = total_fixed_old / old_cm
+    bep_new = total_fixed_new / new_cm
+
+    max_units = int(max(bep_old, bep_new) * 2) + 5
     x = list(range(0, max_units))
 
-    total_cost = [fixed_costs + unit_cost * q for q in x]
-    revenue = [price * q for q in x]
+    old_total_cost = [total_fixed_old + old_unit_cost * q for q in x]
+    new_total_cost = [total_fixed_new + new_unit_cost * q for q in x]
+    old_revenue = [old_price * q for q in x]
+    new_revenue = [new_price * q for q in x]
 
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(x, old_total_cost, 'r--', label="Current Total Cost")
+    ax.plot(x, new_total_cost, 'r-', label="New Total Cost")
+    ax.plot(x, old_revenue, 'g--', label="Current Revenue")
+    ax.plot(x, new_revenue, 'g-', label="New Revenue")
 
-    ax.plot(x, total_cost, label="Total Cost", linewidth=3)
-    ax.plot(x, revenue, label="Revenue", linewidth=3)
+    ax.axvline(bep_old, linestyle="--", label="Current Break-Even")
+    ax.axvline(bep_new, linestyle="--", label="New Break-Even")
 
-    ax.axvline(required_units, linestyle="--", linewidth=2,
-               label=f"Required Units ({int(required_units)})")
-
-    ax.axvline(units_sold, linestyle="-.", linewidth=2,
-               label=f"Analyzed Volume ({int(units_sold)})")
-
-    ax.set_xlabel("Units Sold", fontsize=12, fontweight='bold')
-    ax.set_ylabel("Currency (USD)", fontsize=12, fontweight='bold')
-    ax.set_title("Executive Break-Even & Target Profit Analysis",
-                 fontsize=16, fontweight='bold', pad=20)
-
-    ax.legend(loc='upper left')
-    ax.grid(True, linestyle=':', alpha=0.6)
-
-    # Profit shading
-    profit_zone = [revenue[i] > total_cost[i] for i in range(len(x))]
-    ax.fill_between(x, revenue, total_cost,
-                    where=profit_zone,
-                    alpha=0.1)
+    ax.set_xlabel("Units sold")
+    ax.set_ylabel("USD")
+    ax.set_title("Break-Even Shift After Decision")
+    ax.legend()
+    ax.grid(True)
 
     st.pyplot(fig)
+    st.markdown("---")
 
 
-# -----------------------
-# Main App
-# -----------------------
+# -------------------------------------------------
+# Streamlit UI
+# -------------------------------------------------
 
 def show_break_even_shift_calculator():
+    st.header("🟠 Break-Even Decision Tool")
+    st.markdown(
+        "Answer client questions **immediately**, without spreadsheets. "
+        "Leave any field as **0** if it does not apply."
+    )
 
-    st.header("📈 Executive Break-Even & Pricing Dashboard")
-    st.write("Stress-test your business model against price, cost, and volume shifts.")
+    with st.form("break_even_form"):
+        fixed_costs_input = st.text_input("Existing fixed costs per period", "10000.00")
+        st.caption("All recurring costs you must cover every period, regardless of sales volume.")
 
-    # Sidebar
-    with st.sidebar:
+        new_investment_input = st.text_input("Additional fixed investment (enter 0 if none)", "0.00")
+        st.caption("Any new fixed cost required by this decision.")
 
-        st.subheader("Financial Inputs")
-        f_costs = st.text_input("Existing Fixed Costs", "10000.00")
-        f_invest = st.text_input("New Fixed Investment", "0.00")
-        t_profit = st.text_input("Target Profit", "0.00")
+        target_profit_input = st.text_input("Target profit per period (leave 0 if none)", "0.00")
+        st.caption("Optional. Enter the profit you want to generate per period.")
 
-        st.divider()
+        old_price_input = st.text_input("Current selling price per unit", "10.50")
+        st.caption("The price at which you currently sell one unit.")
 
-        u_price = st.text_input("Price per Unit", "11.00")
-        u_cost = st.text_input("Variable Cost per Unit", "6.50")
-        u_sold = st.text_input("Units Currently Sold", "500")
+        new_price_input = st.text_input("New selling price per unit", "11.00")
+        st.caption("The new price you are considering after this decision.")
 
-        st.divider()
+        old_unit_cost_input = st.text_input("Current variable cost per unit", "6.00")
+        st.caption("Direct cost per unit sold.")
 
-        st.subheader("Stress Testing")
-        p_stress = st.slider("Price Shift (%)", -30, 30, 0)
-        c_stress = st.slider("Cost Shift (%)", -30, 30, 0)
-        v_stress = st.slider("Volume Shift (%)", -50, 50, 0)
+        new_unit_cost_input = st.text_input("New variable cost per unit", "6.50")
+        st.caption("Expected direct cost per unit after the decision.")
 
-        calculate = st.button("Run Executive Analysis")
+        units_sold_input = st.text_input("Units sold per period (current level)", "500")
+        st.caption("How many units you currently sell per period.")
 
-    if calculate:
+        submitted = st.form_submit_button("Run decision check")
+
+    if submitted:
         try:
-            # Parsing
-            fixed = parse_number_en(f_costs) + parse_number_en(f_invest)
-            target_profit = parse_number_en(t_profit)
+            # 1. PARSING SECTION
+            fixed_costs = parse_number_en(fixed_costs_input)
+            new_investment = parse_number_en(new_investment_input)
+            target_profit = parse_number_en(target_profit_input)
+            old_price = parse_number_en(old_price_input)
+            new_price = parse_number_en(new_price_input)
+            old_unit_cost = parse_number_en(old_unit_cost_input)
+            new_unit_cost = parse_number_en(new_unit_cost_input)
+            units_sold = parse_number_en(units_sold_input)
 
-            price = parse_number_en(u_price) * (1 + p_stress / 100)
-            cost = parse_number_en(u_cost) * (1 + c_stress / 100)
-            volume = parse_number_en(u_sold) * (1 + v_stress / 100)
+            # --- ΠΡΟΣΘΗΚΗ 1: Dynamic pricing suggestion (Μετά τα parsing) ---
+            suggested_price = None
+            if units_sold > 0:
+                suggested_price = (
+                    (fixed_costs + target_profit) / units_sold
+                ) + new_unit_cost
+            # -----------------------------------------
 
-            margin = price - cost
+            old_bep, new_bep, percent_change, units_change = calculate_break_even_shift(
+                fixed_costs + target_profit,
+                new_investment,
+                old_price,
+                new_price,
+                old_unit_cost,
+                new_unit_cost,
+                units_sold
+            )
 
-            if margin <= 0:
-                st.error("🔴 Fatal Error: Contribution margin is zero or negative.")
+            if percent_change is None:
+                st.error("Contribution margin is zero or negative. This decision destroys the business model.")
                 return
 
-            required_units = (fixed + target_profit) / margin
-            actual_profit = (margin * volume) - fixed
-            mos = (volume - required_units) / volume if volume > 0 else -1
+            # 2. RESULTS SECTION
+            st.success(f"Current break-even: {format_number_en(old_bep, 0)} units")
+            st.success(f"New break-even after decision: {format_number_en(new_bep, 0)} units")
 
-            # -----------------------
-            # Risk Assessment
-            # -----------------------
+            # --- ΠΡΟΣΘΗΚΗ 2: Display Suggested Price (Μετά τα break even results) ---
+            if suggested_price is not None:
+                st.markdown("---")
+                st.subheader("💡 Dynamic Pricing Suggestion")
 
-            risk = 0
-            if actual_profit < 0:
-                risk += 50
-            if mos < 0.10:
-                risk += 30
-            if margin < price * 0.15:
-                risk += 20
+                st.markdown(
+                    f"If you sell **{format_number_en(units_sold,0)} units**, "
+                    f"to generate **{format_number_en(target_profit,0)} USD profit**, "
+                    f"you should charge approximately:"
+                )
 
-            risk = min(risk, 100)
+                st.success(
+                    f"Suggested price per unit: {format_number_en(suggested_price,2)} USD"
+                )
+            # -----------------------------------------
 
-            st.divider()
+            st.markdown(f"- **Additional units required:** {format_number_en(units_change,0)}")
+            st.markdown(f"- **Change in required sales threshold:** {format_percentage_en(percent_change)}")
 
-            # -----------------------
-            # KPI Section
-            # -----------------------
+            if percent_change < 0.10:
+                st.success("🟢 Absorbed by current model")
+            elif percent_change <= 0.30:
+                st.warning("🟠 Stretches sales capacity")
+            else:
+                st.error("🔴 High-risk decision — required sales threshold jumps")
 
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Required Units", f"{int(required_units)}")
-            c2.metric("Projected Profit", f"${actual_profit:,.0f}")
-            c3.metric("Margin of Safety", f"{mos*100:.1f}%")
-
-            # Risk Indicator
-            st.progress(risk / 100)
-            st.caption(f"Risk Score: {risk}/100")
-
-            st.divider()
-
-            # -----------------------
-            # Visualization
-            # -----------------------
-
-            st.subheader("📊 Profit & Loss Visualization")
-            plot_break_even(fixed, target_profit, price, cost, volume)
-
-            st.divider()
-
-            # -----------------------
-            # Strategic Analysis
-            # -----------------------
-
-            col_left, col_right = st.columns(2)
-
-            with col_left:
-                st.subheader("📋 Structural Analysis")
-
-                summary_df = pd.DataFrame({
-                    "Variable": [
-                        "Total Fixed Costs",
-                        "Target Profit",
-                        "Analyzed Volume",
-                        "Contribution Margin"
-                    ],
-                    "Value": [
-                        f"${fixed:,.2f}",
-                        f"${target_profit:,.2f}",
-                        f"{int(volume)} units",
-                        f"${margin:,.2f}"
-                    ]
-                })
-
-                st.table(summary_df)
-
-            with col_right:
-                st.subheader("💡 Pricing Strategy")
-
-                req_price = ((fixed + target_profit) / volume) + cost if volume > 0 else 0
-
-                st.info(f"""
-To achieve your target profit at **{int(volume)} units**:
-
-Minimum Required Price: **${req_price:,.2f}**
-""")
-
-                if volume < required_units:
-                    st.error(f"⚠ DEFICIT: {int(required_units - volume)} units short of target.")
-                else:
-                    st.success(f"✅ SURPLUS: {int(volume - required_units)} units above target.")
+            plot_break_even_shift(
+                fixed_costs + target_profit,
+                new_investment,
+                old_price,
+                new_price,
+                old_unit_cost,
+                new_unit_cost,
+                units_sold
+            )
 
         except Exception as e:
-            st.error(f"Analysis Error: {e}")
+            st.error(f"Input error: {e}")
 
-
+# Call the function to run the app
 if __name__ == "__main__":
     show_break_even_shift_calculator()
