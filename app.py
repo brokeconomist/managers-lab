@@ -19,7 +19,7 @@ from discount_npv_ui import show_discount_npv_ui
 from credit_days_calculator import show_credit_days_calculator
 from inventory_turnover_calculator import show_inventory_turnover_calculator
 from qspm_two_strategies import show_qspm_tool
-from pricing_power_radar import show_pricing_power_radar
+from pricing_power_radar import show_pricing_power_radar  # ✅ σωστό import
 
 # ----------------------------------------
 # Page config
@@ -34,16 +34,18 @@ st.set_page_config(
 # Tool registry
 # ----------------------------------------
 tool_categories = {
-    "🏠 Home": [("Home", show_home)],
+    "🏠 Home": [
+        ("Home", show_home)
+    ],
 
     "💡 Getting Started": [
-        ("Start Here", show_start_here),
+        ("Start Here", show_start_here)
     ],
 
     "📈 Break-Even & Pricing": [
         ("Break-Even Shift Analysis", show_break_even_shift_calculator),
         ("Loss Threshold Before Price Cut", show_loss_threshold_before_price_cut),
-        ("Pricing Power Radar", show_pricing_power_radar),  # ✅ ΠΡΟΣΤΕΘΗΚΕ ΣΩΣΤΑ
+        ("Pricing Power Radar", show_pricing_power_radar),  # ✅ ΤΟ ΒΑΛΑΜΕ ΣΩΣΤΑ ΕΔΩ
     ],
 
     "👥 Customer Value": [
@@ -96,7 +98,7 @@ selected_category = st.sidebar.selectbox(
     index=category_keys.index(st.session_state.selected_category)
 )
 
-# Reset tool if category changes
+# Reset tool if category changed
 if selected_category != st.session_state.selected_category:
     st.session_state.selected_category = selected_category
     st.session_state.selected_tool = tool_categories[selected_category][0][0]
@@ -138,5 +140,5 @@ for name, func in tools_in_category:
 st.divider()
 st.caption(
     "Managers’ Lab · Decision Laboratory\n"
-    "Exploration is open. Structural integrity is mandatory.\n"
+    "Exploration is open. Structural integrity is mandatory."
 )
