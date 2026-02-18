@@ -79,7 +79,7 @@ def show_break_even_shift_calculator():
 
         u_price = st.text_input("Price per Unit", "11.00")
         u_cost = st.text_input("Variable Cost per Unit", "6.50")
-        u_sold = st.text_input("Units Currently Sold", "2500")
+        u_sold = st.text_input("Units Currently Sold", "4000")
 
         st.divider()
 
