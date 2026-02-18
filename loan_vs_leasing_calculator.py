@@ -11,7 +11,7 @@ def pmt(rate, nper, pv, fv=0, when=0):
 def format_eur(x):
     return f"€ {x:,.0f}".replace(",", ".")
 
-# CALCULATION ENGINE (Preserving your original logic)
+# CALCULATION ENGINE (Preserving your original formulas exactly)
 def run_calculations(loan_rate, wc_rate, years, tax_rate, when, value, loan_pct, lease_pct, exp_loan, exp_lease, residual, dep_years):
     months = years * 12
     
@@ -50,32 +50,34 @@ def loan_vs_leasing_ui():
     with st.sidebar:
         st.subheader("Financial Terms")
         loan_rate_input = st.number_input("Interest Rate (%)", value=6.0) / 100
-        wc_rate = st.number_input("Working Capital Interest Rate (%)", value=8.0) / 100
-        years = st.number_input("Duration (years)", value=15)
-        tax_rate = st.number_input("Corporate Tax Rate (%)", value=35.0) / 100
+        wc_rate_input = st.number_input("Working Capital Interest Rate (%)", value=8.0) / 100
+        years_input = st.number_input("Duration (years)", value=15)
+        tax_rate_input = st.number_input("Corporate Tax Rate (%)", value=35.0) / 100
         
         timing = st.radio("Payment Timing", ["End of Period", "Beginning of Period"])
-        when = 1 if timing == "Beginning of Period" else 0
+        when_val = 1 if timing == "Beginning of Period" else 0
 
         st.divider()
         st.subheader("Asset & Financing")
-        value = st.number_input("Property Value (€)", value=250_000.0)
-        loan_pct = st.number_input("Loan Financing (%)", value=70.0) / 100
-        lease_pct = st.number_input("Leasing Financing (%)", value=100.0) / 100
+        value_input = st.number_input("Property Value (€)", value=250_000.0)
+        loan_pct_input = st.number_input("Loan Financing (%)", value=70.0) / 100
+        lease_pct_input = st.number_input("Leasing Financing (%)", value=100.0) / 100
         
         st.divider()
         st.subheader("Costs & Depreciation")
-        exp_loan = st.number_input("Acquisition Costs – Loan (€)", value=35_000.0)
-        exp_lease = st.number_input("Acquisition Costs – Leasing (€)", value=30_000.0)
-        residual = st.number_input("Residual Value (€)", value=3_530.0)
-        dep_years = st.number_input("Depreciation Period (years)", value=30)
+        exp_loan_input = st.number_input("Acquisition Costs – Loan (€)", value=35_000.0)
+        exp_lease_input = st.number_input("Acquisition Costs – Leasing (€)", value=30_000.0)
+        residual_input = st.number_input("Residual Value (€)", value=3_530.0)
+        dep_years_input = st.number_input("Depreciation Period (years)", value=30)
         
         run = st.button("Run Financial Analysis")
 
     if run:
-        # Execute calculation using your formulas
+        # Initial calculation
         l_final, ls_final, l_cash, l_int, l_dep, l_tx, ls_cash, ls_int, ls_dep, ls_tx = run_calculations(
-            loan_rate_input, wc_rate, years, tax_rate, when, value, loan_pct, lease_pct, exp_loan, exp_lease, residual, dep_years
+            loan_rate_input, wc_rate_input, years_input, tax_rate_input, when_val, 
+            value_input, loan_pct_input, lease_pct_input, exp_loan_input, exp_lease_input, 
+            residual_input, dep_years_input
         )
 
         # RESULTS DASHBOARD
@@ -103,14 +105,15 @@ def loan_vs_leasing_ui():
         # EQUILIBRIUM ANALYSIS
         st.subheader("📈 Rate Equilibrium (Sensitivity)")
         
-        # Calculate Equilibrium point
+        # Test rates from -5% to +5% around the input rate
         test_rates = [loan_rate_input + (i/1000) for i in range(-50, 55, 5)]
         ls_burdens = []
         for r in test_rates:
-            _, ls_b, _, _, _, _, _, _, _, _ = run_calculations(
-                r, wc_rate, years, tax_rate, when, value, loan_pct, lease_pct, exp_loan, exp_lease, residual, dep_years
-            )
-            ls_burdens.append(ls_b)
+            # We only care about lease_final (the 2nd return value)
+            res = run_calculations(r, wc_rate_input, years_input, tax_rate_input, when_val, 
+                                 value_input, loan_pct_input, lease_pct_input, exp_loan_input, 
+                                 exp_lease_input, residual_input, dep_years_input)
+            ls_burdens.append(res[1])
             
         # Plotting
         
@@ -119,16 +122,17 @@ def loan_vs_leasing_ui():
         ax.axhline(y=l_final, color='r', linestyle='--', label=f'Loan Fixed Burden')
         ax.set_xlabel("Leasing Rate (%)")
         ax.set_ylabel("Final Burden (€)")
+        ax.set_title("Sensitivity Analysis: Loan vs Leasing Burden")
         ax.legend()
         ax.grid(True, alpha=0.3)
         st.pyplot(fig)
 
-        # Indifference Point calculation
+        # Indifference Point calculation (IndexError fix applied here)
         indifference_rate = None
-        for i in range(len(test_rates)-1):
+        for i in range(len(test_rates) - 1):
             if (ls_burdens[i] - l_final) * (ls_burdens[i+1] - l_final) <= 0:
                 r1, r2 = test_rates[i], test_rates[i+1]
-                b1, b2 = test_burdens[i], test_burdens[i+1]
+                b1, b2 = ls_burdens[i], ls_burdens[i+1]
                 indifference_rate = r1 + (l_final - b1) * (r2 - r1) / (b2 - b1)
                 break
         
