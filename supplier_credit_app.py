@@ -24,10 +24,10 @@ def calculate_supplier_credit_gain(
     # Opportunity cost: The interest we would have earned if we kept the money for the credit period
     average_cost_ratio = total_unit_cost / unit_price
     
-    # Formula logic: Volume of capital * cost ratio * (days/360) * interest rate
+    # Formula logic: Volume of capital * cost ratio * (days/365) * interest rate
     credit_benefit = (
-        (current_sales / (360 / supplier_credit_days)) * average_cost_ratio
-        - ((current_sales * (1 - clients)) / (360 / supplier_credit_days)) * average_cost_ratio
+        (current_sales / (365 / supplier_credit_days)) * average_cost_ratio
+        - ((current_sales * (1 - clients)) / (365 / supplier_credit_days)) * average_cost_ratio
     ) * interest_rate
 
     net_gain = discount_gain - credit_benefit
@@ -71,8 +71,8 @@ def show_supplier_credit_analysis():
         st.subheader("📊 Strategic Indifference Point")
         
         # Effective Annual Interest Rate (EAR) of the discount
-        # Approx formula: (Discount % / (1 - Discount %)) * (360 / Credit Days)
-        approx_ear = (s_discount/100 / (1 - s_discount/100)) * (360 / s_credit_days) * 100
+        # Approx formula: (Discount % / (1 - Discount %)) * (365 / Credit Days)
+        approx_ear = (s_discount/100 / (1 - s_discount/100)) * (365 / s_credit_days) * 100
 
         c1, c2, c3 = st.columns(3)
         c1.metric("Net Economic Gain", f"€ {net_gain:,.0f}")
@@ -109,4 +109,5 @@ def show_supplier_credit_analysis():
 
 if __name__ == "__main__":
     show_supplier_credit_analysis()
+
 
