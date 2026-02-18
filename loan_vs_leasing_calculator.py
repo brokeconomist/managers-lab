@@ -3,7 +3,7 @@ import numpy_financial as npf
 import matplotlib.pyplot as plt
 
 # -------------------------------------------------
-# Formatting
+# Formatting Helpers
 # -------------------------------------------------
 def pmt(rate, nper, pv, fv=0, when=0):
     return -npf.pmt(rate, nper, pv, fv, when)
@@ -11,7 +11,7 @@ def pmt(rate, nper, pv, fv=0, when=0):
 def format_eur(x):
     return f"€ {x:,.0f}".replace(",", ".")
 
-# Συνάρτηση υπολογισμού (ΚΡΑΤΑΕΙ ΤΟΥΣ ΔΙΚΟΥΣ ΣΟΥ ΤΥΠΟΥΣ)
+# CALCULATION ENGINE (Preserving your original logic)
 def run_calculations(loan_rate, wc_rate, years, tax_rate, when, value, loan_pct, lease_pct, exp_loan, exp_lease, residual, dep_years):
     months = years * 12
     
@@ -44,6 +44,7 @@ def run_calculations(loan_rate, wc_rate, years, tax_rate, when, value, loan_pct,
 # -------------------------------------------------
 def loan_vs_leasing_ui():
     st.header("📊 Loan vs Leasing – Analytical Comparison")
+    st.caption("Strategic evaluation of financing structures based on net financial burden.")
     
     # SIDEBAR INPUTS
     with st.sidebar:
@@ -72,12 +73,12 @@ def loan_vs_leasing_ui():
         run = st.button("Run Financial Analysis")
 
     if run:
-        # Εκτέλεση βασικού υπολογισμού με τους τύπους σου
+        # Execute calculation using your formulas
         l_final, ls_final, l_cash, l_int, l_dep, l_tx, ls_cash, ls_int, ls_dep, ls_tx = run_calculations(
             loan_rate_input, wc_rate, years, tax_rate, when, value, loan_pct, lease_pct, exp_loan, exp_lease, residual, dep_years
         )
 
-        # ΠΑΡΟΥΣΙΑΣΗ ΑΠΟΤΕΛΕΣΜΑΤΩΝ (Dashboard Style)
+        # RESULTS DASHBOARD
         st.subheader("📉 Analytical Breakdown")
         c1, c2 = st.columns(2)
 
@@ -99,10 +100,10 @@ def loan_vs_leasing_ui():
 
         st.divider()
 
-        # EQUILIBRIUM ANALYSIS (ΠΡΟΣΘΗΚΗ ΧΩΡΙΣ ΑΛΛΑΓΗ ΤΩΝ ΤΥΠΩΝ ΣΟΥ)
+        # EQUILIBRIUM ANALYSIS
         st.subheader("📈 Rate Equilibrium (Sensitivity)")
         
-        # Υπολογίζουμε το Equilibrium point (Indifference)
+        # Calculate Equilibrium point
         test_rates = [loan_rate_input + (i/1000) for i in range(-50, 55, 5)]
         ls_burdens = []
         for r in test_rates:
@@ -112,6 +113,7 @@ def loan_vs_leasing_ui():
             ls_burdens.append(ls_b)
             
         # Plotting
+        
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot([r*100 for r in test_rates], ls_burdens, label='Leasing Cost Curve', color='#1f77b4', marker='o')
         ax.axhline(y=l_final, color='r', linestyle='--', label=f'Loan Fixed Burden')
@@ -121,17 +123,17 @@ def loan_vs_leasing_ui():
         ax.grid(True, alpha=0.3)
         st.pyplot(fig)
 
-        # Εύρεση Indifference Point
+        # Indifference Point calculation
         indifference_rate = None
         for i in range(len(test_rates)-1):
             if (ls_burdens[i] - l_final) * (ls_burdens[i+1] - l_final) <= 0:
                 r1, r2 = test_rates[i], test_rates[i+1]
-                b1, b2 = ls_burdens[i], ls_burdens[i+1]
+                b1, b2 = test_burdens[i], test_burdens[i+1]
                 indifference_rate = r1 + (l_final - b1) * (r2 - r1) / (b2 - b1)
                 break
         
         if indifference_rate:
-            st.info(f"**Equilibrium Point:** Το Leasing γίνεται προτιμότερο από το Δάνειο αν το επιτόκιο πέσει κάτω από **{indifference_rate*100:.2f}%**.")
+            st.info(f"**Equilibrium Point:** Leasing becomes financially superior to Loan financing if the interest rate drops below **{indifference_rate*100:.2f}%**.")
         
         st.divider()
         if l_final < ls_final:
