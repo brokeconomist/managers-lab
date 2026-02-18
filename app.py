@@ -60,7 +60,7 @@ tool_categories = {
         ("Cash Cycle Calculator", run_cash_cycle_app),
         ("Credit Policy Analysis", show_credit_policy_analysis),
         ("Supplier Payment Analysis", show_supplier_credit_analysis),
-        ("Loan vs Leasing Analysis", show_loan_vs_leasing_ui),
+        ("Loan vs Leasing Analysis", loan_vs_leasing_ui),
         ("Cash Fragility Index", show_cash_fragility_index),
     ],
 
