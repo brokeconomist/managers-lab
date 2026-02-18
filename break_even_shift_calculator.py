@@ -177,5 +177,52 @@ def show_break_even_shift_calculator():
         st.markdown(f"**Calculated Stress Risk:** {stress_metrics['risk']}/100")
         st.progress(stress_metrics["risk"] / 100)
 
+
+        # -----------------------------
+        # 6. Tornado Sensitivity
+        # -----------------------------
+
+        st.divider()
+        st.subheader("🌪 Sensitivity Analysis (Tornado Chart)")
+        plot_tornado(fixed_total, target_profit, stress_p, stress_c, stress_v)
+
 if __name__ == "__main__":
     show_break_even_shift_calculator()
+# -----------------------
+# Tornado Sensitivity Chart
+# -----------------------
+
+def plot_tornado(fixed, target_profit, price, cost, volume):
+
+    base_metrics = calculate_metrics(fixed, target_profit, price, cost, volume)
+    if not base_metrics:
+        return
+
+    base_profit = base_metrics["profit"]
+
+    shock = 0.10  # 10% sensitivity
+
+    scenarios = {
+        "Price +10%": calculate_metrics(fixed, target_profit, price*1.1, cost, volume)["profit"],
+        "Price -10%": calculate_metrics(fixed, target_profit, price*0.9, cost, volume)["profit"],
+        "Cost +10%": calculate_metrics(fixed, target_profit, price, cost*1.1, volume)["profit"],
+        "Cost -10%": calculate_metrics(fixed, target_profit, price, cost*0.9, volume)["profit"],
+        "Volume +10%": calculate_metrics(fixed, target_profit, price, cost, volume*1.1)["profit"],
+        "Volume -10%": calculate_metrics(fixed, target_profit, price, cost, volume*0.9)["profit"],
+    }
+
+    impact = {k: v - base_profit for k, v in scenarios.items()}
+
+    sorted_impact = dict(sorted(impact.items(), key=lambda x: abs(x[1]), reverse=True))
+
+    labels = list(sorted_impact.keys())
+    values = list(sorted_impact.values())
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.barh(labels, values)
+
+    ax.set_title("Tornado Sensitivity Analysis (±10%)", fontweight="bold")
+    ax.set_xlabel("Impact on Profit ($)")
+    ax.axvline(0)
+
+    st.pyplot(fig)
