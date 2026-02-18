@@ -8,36 +8,42 @@ import matplotlib.pyplot as plt
 # -------------------------------
 
 def pmt(rate, nper, pv, fv=0, when=0):
+    # Standard Excel-compatible PMT function
     return -npf.pmt(rate, nper, pv, fv, when)
 
 def calculate_burden(rate, years, asset_val, funding_pct, add_costs, wc_rate, tax_rate, is_lease=False, residual=0, when=0):
-    # Μετατροπή σε μήνες - Η βάση 365 ημερών επηρεάζει τον ετήσιο ανατοκισμό
-    months = years * 12
+    # Μηνιαία βάση υπολογισμού (Standard Banking Logic)
+    months = int(years * 12)
+    monthly_rate = rate / 12
+    monthly_wc_rate = wc_rate / 12
     
-    # 1. Κύρια Χρηματοδότηση (Loan ή Lease)
-    principal_inst = pmt(rate / 12, months, asset_val * funding_pct, 0, when)
+    # 1. Κύρια Δόση (Δάνειο ή Leasing)
+    principal_inst = pmt(monthly_rate, months, asset_val * funding_pct, 0, when)
     
-    # 2. Χρηματοδότηση Ιδίων Κεφαλαίων & Εξόδων (Working Capital Cost)
-    # Χρησιμοποιούμε 365 για να βρούμε το ακριβές κόστος ευκαιρίας αν χρειαζόταν
+    # 2. Δόση για Ίδια Κεφάλαια & Έξοδα (Opportunity Cost)
     wc_amt = asset_val * (1 - funding_pct) + add_costs
-    wc_inst = pmt(wc_rate / 12, months, wc_amt, 0, when)
+    wc_inst = pmt(monthly_wc_rate, months, wc_amt, 0, when)
     
+    # Συνολικές Εκροές (Cash Out)
     total_cash_out = (principal_inst + wc_inst) * months + (residual if is_lease else 0)
+    
+    # Τόκοι (Συνολική Εκροή μείον το Αρχικό Κεφάλαιο και τα Έξοδα)
+    # Στο Leasing περιλαμβάνεται και το residual στην αξία που "αγοράζεις" στο τέλος
     interest_only = total_cash_out - asset_val - add_costs - (residual if is_lease else 0)
     
     # 3. Tax Shield (Interest + Depreciation)
-    # Οι αποσβέσεις υπολογίζονται επί του (Value + Costs)
+    # Η απόσβεση υπολογίζεται στην αρχική αξία + έξοδα
     tax_shield = (interest_only + (asset_val + add_costs)) * tax_rate
     
-    return total_cash_out - tax_shield
+    return total_cash_out - tax_shield, principal_inst + wc_inst, total_cash_out
 
 # -------------------------------
 # UI Logic
 # -------------------------------
 
-def show_loan_vs_leasing_analysis():
+def loan_vs_leasing_ui():
     st.header("📊 Loan vs Leasing & Sensitivity Analysis")
-    st.caption("Analytical comparison using a 365-day year basis and tax shield optimization.")
+    st.caption("Standard Monthly Amortization (Excel-Compatible Logic)")
 
     with st.sidebar:
         st.header("🔢 Global Variables")
@@ -59,27 +65,32 @@ def show_loan_vs_leasing_analysis():
         lease_exp = st.number_input("Lease Costs (€)", value=30000.0)
         residual = st.number_input("Residual Value (€)", value=3530.0)
         
-        run = st.button("Execute Strategic Analysis")
+        timing = st.radio("Payment Timing", ["End of Month", "Start of Month"])
+        when = 1 if timing == "Start of Month" else 0
+        
+        run = st.button("Calculate Decision")
 
     if run:
         # --- BASE CASE ---
-        loan_burden = calculate_burden(loan_rate, years, asset_value, loan_pct, loan_exp, wc_rate, tax_rate)
-        lease_burden = calculate_burden(lease_rate_base, years, asset_value, lease_pct, lease_exp, wc_rate, tax_rate, True, residual)
+        loan_burden, loan_monthly, loan_cash = calculate_burden(loan_rate, years, asset_value, loan_pct, loan_exp, wc_rate, tax_rate, False, 0, when)
+        lease_burden, lease_monthly, lease_cash = calculate_burden(lease_rate_base, years, asset_value, lease_pct, lease_exp, wc_rate, tax_rate, True, residual, when)
 
-        st.subheader("🔍 Financial Burden Breakdown")
+        st.subheader("🔍 Financial Summary")
         c1, c2 = st.columns(2)
-        c1.metric("Loan Net Burden", f"€ {loan_burden:,.0f}".replace(",", "."))
-        c2.metric("Leasing Net Burden", f"€ {lease_burden:,.0f}".replace(",", "."))
+        with c1:
+            st.metric("Loan Net Burden", f"€ {loan_burden:,.0f}".replace(",", "."))
+            st.write(f"Monthly Installment: **€ {loan_monthly:,.2f}**")
+        with c2:
+            st.metric("Leasing Net Burden", f"€ {lease_burden:,.0f}".replace(",", "."))
+            st.write(f"Monthly Installment: **€ {lease_monthly:,.2f}**")
 
         # --- SENSITIVITY ANALYSIS ---
         st.divider()
         st.subheader("📈 Lease Rate Sensitivity & Indifference Point")
         
-        # Παράγουμε μια λίστα επιτοκίων γύρω από το επιλεγμένο lease rate
-        test_rates = [lease_rate_base + (i/1000) for i in range(-40, 45, 5)] # -4% έως +4%
-        test_burdens = [calculate_burden(r, years, asset_value, lease_pct, lease_exp, wc_rate, tax_rate, True, residual) for r in test_rates]
+        test_rates = [lease_rate_base + (i/1000) for i in range(-40, 45, 5)] 
+        test_burdens = [calculate_burden(r, years, asset_value, lease_pct, lease_exp, wc_rate, tax_rate, True, residual, when)[0] for r in test_rates]
         
-        # Εύρεση Indifference Point (Σημείο Ισορροπίας)
         indifference_rate = None
         for i in range(len(test_rates)-1):
             if (test_burdens[i] - loan_burden) * (test_burdens[i+1] - loan_burden) <= 0:
@@ -88,48 +99,26 @@ def show_loan_vs_leasing_analysis():
                 indifference_rate = r1 + (loan_burden - b1) * (r2 - r1) / (b2 - b1)
                 break
 
-        # Plotting
         fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot([r*100 for r in test_rates], test_burdens, label='Leasing Cost Curve', marker='s', color='#1f77b4', linewidth=2)
-        ax.axhline(y=loan_burden, color='#d62728', linestyle='--', label=f'Loan Fixed Cost ({loan_rate*100:.1f}%)')
+        ax.plot([r*100 for r in test_rates], test_burdens, label='Leasing Cost Curve', marker='s', color='#1f77b4')
+        ax.axhline(y=loan_burden, color='#d62728', linestyle='--', label=f'Loan Fixed Cost')
         
         if indifference_rate:
-            ax.plot(indifference_rate*100, loan_burden, 'go', markersize=10, label='Indifference Point')
-            ax.annotate(f'{indifference_rate*100:.2f}%', 
-                        xy=(indifference_rate*100, loan_burden), 
-                        xytext=(indifference_rate*100 + 0.5, loan_burden + 5000),
-                        arrowprops=dict(facecolor='black', shrink=0.05))
+            ax.plot(indifference_rate*100, loan_burden, 'go', markersize=10, label=f'Equilibrium @ {indifference_rate*100:.2f}%')
 
-        ax.set_title("Sensitivity: Net Burden vs. Leasing Rate", fontsize=12, fontweight='bold')
         ax.set_xlabel("Leasing Interest Rate (%)")
         ax.set_ylabel("Net Financial Burden (€)")
         ax.legend()
         ax.grid(True, linestyle=':', alpha=0.6)
         st.pyplot(fig)
 
-        
-
-        # --- STRATEGIC VERDICT ---
+        # --- VERDICT ---
         st.divider()
-        st.subheader("🧠 Tactical Verdict")
-        
         if indifference_rate:
-            st.write(f"**Indifference Point:** {indifference_rate*100:.2f}%")
             if lease_rate_base > indifference_rate:
-                st.error(f"The current Leasing Rate is **above** the indifference point ({indifference_rate*100:.2f}%). Use the **Loan**.")
+                st.error(f"❌ **USE LOAN:** The lease rate must be below **{indifference_rate*100:.2f}%** to be competitive.")
             else:
-                st.success(f"The current Leasing Rate is **below** the indifference point ({indifference_rate*100:.2f}%). Use **Leasing**.")
-        else:
-            st.info("The financing structures are too different to intersect within this rate range.")
-
-        # Detailed Data Table
-        with st.expander("View Data Table"):
-            df = pd.DataFrame({
-                "Lease Rate (%)": [f"{r*100:.2f}%" for r in test_rates],
-                "Lease Burden (€)": [f"{b:,.0f}" for b in test_burdens],
-                "Loan Burden (€)": [f"{loan_burden:,.0f}" for _ in test_rates]
-            })
-            st.table(df)
+                st.success(f"✅ **USE LEASING:** Your rate is efficient. It can rise up to **{indifference_rate*100:.2f}%** before losing its advantage.")
 
 if __name__ == "__main__":
-    show_loan_vs_leasing_analysis()
+    loan_vs_leasing_ui()
