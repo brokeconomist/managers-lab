@@ -7,8 +7,10 @@ from home import show_home
 from start_here import show_start_here
 from break_even_shift_calculator import show_break_even_shift_calculator
 from clv_calculator import show_clv_calculator
-from substitution_analysis import show_substitution_analysis
-from substitutes_sensitivity_tool import show_substitutes_sensitivity_tool
+
+# Εδώ είναι η αλλαγή: Ενοποιημένο εργαλείο Substitution
+from substitution_analysis_tool import show_substitutes_sensitivity_tool
+
 from complementary_analysis import show_complementary_analysis
 from loss_threshold import show_loss_threshold_before_price_cut
 from credit_policy_app import show_credit_policy_analysis
@@ -42,8 +44,8 @@ tool_categories = {
     ],
     "👥 Customer Value": [
         ("CLV Analysis", show_clv_calculator),
-        ("Substitution Analysis", show_substitution_analysis),
-        ("Substitutes Sensitivity Tool", show_substitutes_sensitivity_tool),
+        # Εδώ έγινε η σύμπτυξη σε ένα εργαλείο
+        ("Strategic Substitution Analysis", show_substitutes_sensitivity_tool),
         ("Complementary Product Analysis", show_complementary_analysis),
     ],
     "💰 Finance & Cash Flow": [
@@ -77,7 +79,7 @@ if "selected_tool" not in st.session_state:
 # ----------------------------------------
 # Sidebar
 # ----------------------------------------
-st.sidebar.title("🧪 Managers’ Lab - Tool Categories")
+st.sidebar.title("🧪 Managers’ Lab")
 
 category_keys = list(tool_categories.keys())
 selected_category = st.sidebar.selectbox(
@@ -106,7 +108,7 @@ st.session_state.selected_tool = selected_tool
 # Back to Home button
 # ----------------------------------------
 if not (st.session_state.selected_category == "🏠 Home" and st.session_state.selected_tool == "Home"):
-    if st.button("← Back to Lab"):
+    if st.sidebar.button("← Back to Lab"):
         st.session_state.selected_category = "🏠 Home"
         st.session_state.selected_tool = "Home"
         st.rerun()
@@ -124,6 +126,6 @@ for name, func in tools_in_category:
 # ----------------------------------------
 st.divider()
 st.caption(
-    "Managers’ Lab · Decision laboratory\n"
-    "Exploration is open. Commitment may not be.\n"
+    "Managers’ Lab · Decision Laboratory\n"
+    "Exploration is open. Structural integrity is mandatory.\n"
 )
