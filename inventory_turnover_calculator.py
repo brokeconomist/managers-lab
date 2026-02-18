@@ -1,111 +1,130 @@
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
 
-def turnover_quantity_based(avg_qty, sold_qty):
-    """
-    Calculate inventory turnover in days based on quantity.
-    """
-    if sold_qty == 0:
+# -------------------------------------------------
+# Logic Functions
+# -------------------------------------------------
+def calculate_turnover(avg_inv, usage_val):
+    if usage_val == 0:
         return 0
-    return round((avg_qty * 365) / sold_qty, 2)
+    # Χρήση 365 ημερών βάσει των οδηγιών σου
+    return round((avg_inv * 365) / usage_val, 2)
 
-def turnover_value_based(avg_value, cost_of_goods_sold):
-    """
-    Calculate inventory turnover in days based on value.
-    """
-    if cost_of_goods_sold == 0:
-        return 0
-    return round((avg_value * 365) / cost_of_goods_sold, 2)
-
-
+# -------------------------------------------------
+# UI Interface
+# -------------------------------------------------
 def show_inventory_turnover_calculator():
-    st.title("📦 Inventory Turnover Calculator")
-    st.caption(
-        "Estimate the **average time inventory is held** before being sold, "
-        "either by quantity or by value. Useful for inventory management and cash flow planning."
-    )
+    st.header("📦 Inventory Turnover & Pareto Analysis")
+    st.caption("Identify slow-moving items and capital concentration in your warehouse.")
 
-    st.header("🔢 Calculation Method")
-    method = st.radio(
-        "Choose a calculation method",
-        ["📊 Quantity-Based", "💶 Value-Based"]
-    )
-    st.caption(
-        "📊 Quantity-Based: calculates turnover in days based on units.\n"
-        "💶 Value-Based: calculates turnover in days based on inventory value and COGS."
-    )
-
-    num_items = st.number_input(
-        "Number of Products",
-        min_value=1,
-        max_value=10,
-        value=4
-    )
-
-    product_names = []
-    quantity_inputs = []
-    value_inputs = []
-
-    st.markdown("### 📝 Input Data")
-    for i in range(num_items):
-        st.markdown(f"#### Product {i+1}")
-        name = st.text_input(f"Product Name {i+1}", key=f"name_{i}")
-
-        if method == "📊 Quantity-Based":
-            avg_inventory = st.number_input(
-                "Average Inventory (units)",
-                min_value=0.0,
-                key=f"inv_qty_{i}"
-            )
-            sold_quantity = st.number_input(
-                "Units Sold",
-                min_value=0.0,
-                key=f"sold_qty_{i}"
-            )
-            st.caption(
-                "Enter the **average inventory in units** and the **number of units sold** "
-                "during the period. These values are used to calculate turnover in days."
-            )
-            quantity_inputs.append((avg_inventory, sold_quantity))
-
-        else:
-            avg_inventory_value = st.number_input(
-                "Average Inventory Value (€)",
-                min_value=0.0,
-                key=f"inv_val_{i}"
-            )
-            cogs = st.number_input(
-                "Cost of Goods Sold (€)",
-                min_value=0.0,
-                key=f"cogs_{i}"
-            )
-            st.caption(
-                "Enter the **average inventory value** and the **cost of goods sold** during the period. "
-                "These values are used to calculate turnover in days based on monetary value."
-            )
-            value_inputs.append((avg_inventory_value, cogs))
-
-        product_names.append(name)
-
-    if st.button("📈 Calculate"):
-        st.markdown("---")
-        st.subheader("📊 Results")
-        for i, name in enumerate(product_names):
-            if method == "📊 Quantity-Based":
-                avg_inv, sold = quantity_inputs[i]
-                result = turnover_quantity_based(avg_inv, sold)
-                st.metric(
-                    f"🛒 {name} (Quantity-Based)",
-                    f"{result} days"
-                )
-            else:
-                avg_val, cogs = value_inputs[i]
-                result = turnover_value_based(avg_val, cogs)
-                st.metric(
-                    f"💰 {name} (Value-Based)",
-                    f"{result} days"
-                )
-
-        st.caption(
-            "The results represent the **average number of days inventory is held**. "
-            "Lower days indicate faster turnover, which improves cash flow and reduces storage costs."
+    # SIDEBAR: Settings
+    with st.sidebar:
+        st.subheader("Configuration")
+        method = st.radio(
+            "Calculation Basis",
+            ["📊 Quantity-Based", "💶 Value-Based"]
         )
+        num_items = st.number_input("Number of Products", min_value=1, max_value=20, value=5)
+        
+        st.divider()
+        st.info("Value-Based analysis is recommended for identifying where your cash is 'trapped'.")
+
+    # INPUT AREA
+    st.subheader("📥 Inventory Data")
+    
+    col_names = ["Product Name", "Avg. Inventory", "Annual Sales/COGS"]
+    if method == "📊 Quantity-Based":
+        input_labels = ["Name", "Avg. Units", "Units Sold"]
+    else:
+        input_labels = ["Name", "Avg. Value (€)", "COGS (€)"]
+
+    data_list = []
+    
+    # Header Row
+    h1, h2, h3 = st.columns([2, 1, 1])
+    h1.markdown(f"**{input_labels[0]}**")
+    h2.markdown(f"**{input_labels[1]}**")
+    h3.markdown(f"**{input_labels[2]}**")
+
+    for i in range(num_items):
+        c1, c2, c3 = st.columns([2, 1, 1])
+        name = c1.text_input(f"n_{i}", value=f"Item {i+1}", label_visibility="collapsed")
+        avg_inv = c2.number_input(f"inv_{i}", min_value=0.0, step=10.0, label_visibility="collapsed")
+        usage = c3.number_input(f"usage_{i}", min_value=0.0, step=100.0, label_visibility="collapsed")
+        data_list.append({"Name": name, "AvgInventory": avg_inv, "Usage": usage})
+
+    st.divider()
+
+    if st.button("📊 Run Inventory Analysis", type="primary"):
+        df = pd.DataFrame(data_list)
+        
+        # Calculate Turnover Days for each item
+        df["Turnover Days"] = df.apply(lambda x: calculate_turnover(x["AvgInventory"], x["Usage"]), axis=1)
+        
+        # 1. SUMMARY METRICS
+        total_inv = df["AvgInventory"].sum()
+        total_usage = df["Usage"].sum()
+        weighted_avg_days = calculate_turnover(total_inv, total_usage)
+
+        m1, m2 = st.columns(2)
+        label_inv = "Total Inventory Value" if "Value" in method else "Total Units in Stock"
+        m1.metric(label_inv, f"{total_inv:,.0f}")
+        m2.metric("Weighted Avg. Turnover", f"{weighted_avg_days} Days")
+
+        # 2. PARETO ANALYSIS (Based on Inventory Amount)
+        # Θέλουμε να δούμε ποια προϊόντα αποτελούν το μεγαλύτερο μέρος του αποθέματος
+        df_pareto = df.sort_values(by="AvgInventory", ascending=False).copy()
+        df_pareto["Weight %"] = (df_pareto["AvgInventory"] / total_inv * 100) if total_inv > 0 else 0
+        df_pareto["Cumulative %"] = df_pareto["Weight %"].cumsum()
+
+        st.subheader("📈 Pareto Analysis: Capital Concentration")
+        st.caption("The chart shows which items represent the largest share of your inventory investment.")
+
+        
+
+        fig, ax1 = plt.subplots(figsize=(10, 5))
+        ax1.bar(df_pareto["Name"], df_pareto["AvgInventory"], color="#2ca02c", label="Inventory Amount")
+        ax1.set_ylabel("Inventory Amount")
+        
+        ax2 = ax1.twinx()
+        ax2.plot(df_pareto["Name"], df_pareto["Cumulative %"], color="#d62728", marker="o", label="Cumulative %")
+        ax2.axhline(y=80, color='black', linestyle='--', alpha=0.5)
+        ax2.set_ylim(0, 110)
+        ax2.set_ylabel("Cumulative %")
+        
+        st.pyplot(fig)
+
+        # 3. DETAILED DATA TABLE
+        st.subheader("📋 Analytical Breakdown")
+        st.table(df_pareto.style.format({
+            "AvgInventory": "{:,.2f}",
+            "Usage": "{:,.2f}",
+            "Weight %": "{:.1f}%",
+            "Cumulative %": "{:.1f}%",
+            "Turnover Days": "{:.1f}"
+        }))
+
+        # 4. MANAGERIAL VERDICT (Pareto Insight)
+        st.divider()
+        st.subheader("🧠 Managerial Verdict")
+        
+        # Identify "A" category items (Top 80% of investment)
+        a_items = df_pareto[df_pareto["Cumulative %"] <= 85]["Name"].tolist()
+        
+        col_v1, col_v2 = st.columns(2)
+        
+        with col_v1:
+            st.write("**Key Investment Focus:**")
+            st.write(f"The following items represent ~80% of your inventory: **{', '.join(a_items)}**.")
+        
+        with col_v2:
+            # Check for "Dead Stock" candidates
+            slow_movers = df_pareto[df_pareto["Turnover Days"] > (weighted_avg_days * 1.5)]["Name"].tolist()
+            if slow_movers:
+                st.warning(f"**Slow-Moving Alert:** These items have a turnover rate 50% slower than average: **{', '.join(slow_movers)}**.")
+            else:
+                st.success("**Turnover Balance:** No significant slow-movers detected relative to average.")
+
+if __name__ == "__main__":
+    show_inventory_turnover_calculator()
