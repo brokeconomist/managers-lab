@@ -1,153 +1,96 @@
 import streamlit as st
 
 def run_cash_cycle_app():
-    st.header("💧 Cash Conversion Cycle")
-    st.caption(
-        "Measures how long your business finances operations before cash comes back in."
-    )
+    st.header("💧 Cash Conversion Cycle (CCC) Analysis")
+    st.caption("Strategic assessment of working capital efficiency and liquidity timing.")
 
-    st.markdown(
-        """
-        This tool shows **how many days your capital is tied up** between paying suppliers  
-        and collecting cash from customers.
-
-        > A long cash cycle does **not** mean low profitability —  
-        > it means **higher financing pressure**.
-        """
-    )
-
-    st.markdown("---")
-
-    # =================================================
-    # INVENTORY SECTION
-    # =================================================
-    st.subheader("📦 Inventory & Production Time")
-    st.caption("Time during which money is locked inside materials and production.")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
+    # SIDEBAR: Input Parameters
+    with st.sidebar:
+        st.header("Inventory Components")
         raw_materials_days = st.number_input(
-            "Raw Materials Inventory Days",
-            min_value=0,
-            value=76,
-            step=1
+            "Raw Materials (Days)", min_value=0, value=76, step=1
         )
-        st.caption(
-            "Average number of days raw materials stay in storage before entering production."
-        )
-
         processing_days = st.number_input(
-            "Production / Processing Days",
-            min_value=0,
-            value=37,
-            step=1
+            "Production / Processing (Days)", min_value=0, value=37, step=1
         )
-        st.caption(
-            "Time required to convert raw materials into finished products."
-        )
-
-    with col2:
         finished_goods_days = st.number_input(
-            "Finished Goods Inventory Days",
-            min_value=0,
-            value=42,
-            step=1
-        )
-        st.caption(
-            "Average days finished products remain in inventory before being sold."
+            "Finished Goods (Days)", min_value=0, value=42, step=1
         )
 
-    st.markdown("---")
-
-    # =================================================
-    # CREDIT SECTION
-    # =================================================
-    st.subheader("💳 Credit Terms")
-    st.caption("Timing differences between cash inflows and outflows.")
-
-    col3, col4 = st.columns(2)
-
-    with col3:
+        st.divider()
+        st.header("Credit Components")
         receivables_days = st.number_input(
-            "Accounts Receivable Days",
-            min_value=0,
-            value=73,
-            step=1
+            "Accounts Receivable (Days)", min_value=0, value=73, step=1
         )
-        st.caption(
-            "Average number of days customers take to pay after the sale."
-        )
-
-    with col4:
         payables_days = st.number_input(
-            "Accounts Payable Days",
-            min_value=0,
-            value=61,
-            step=1
+            "Accounts Payable (Days)", min_value=0, value=61, step=1
         )
-        st.caption(
-            "Average number of days you take to pay suppliers."
-        )
+        
+        run_analysis = st.button("Calculate Cycle")
 
-    # =================================================
-    # CALCULATION
-    # =================================================
-    cash_conversion_cycle = (
-        raw_materials_days
-        + processing_days
-        + finished_goods_days
-        + receivables_days
-        - payables_days
-    )
-
-    st.markdown("---")
-
-    # =================================================
-    # RESULTS
-    # =================================================
-    st.subheader("🧮 Result")
-
-    st.metric(
-        label="Total Cash Conversion Cycle",
-        value=f"{cash_conversion_cycle} days"
-    )
-
+    # MAIN AREA: Logic & Results
     st.markdown(
         """
-        **Interpretation**  
-        This is the number of days your business must **self-finance operations**
-        before cash returns from customers.
+        The CCC measures the **time (in days)** your capital remains illiquid—locked between 
+        disbursing cash to suppliers and collecting cash from sales.
         """
     )
 
-    # =================================================
-    # DECISION GUIDANCE
-    # =================================================
-    if cash_conversion_cycle > 150:
-        st.error(
-            "🔴 Very long cash cycle.\n\n"
-            "The business is highly dependent on external financing. "
-            "Inventory reduction, faster collections, or longer supplier credit should be examined."
-        )
+    
 
-    elif cash_conversion_cycle < 60:
-        st.success(
-            "🟢 Short and efficient cash cycle.\n\n"
-            "Working capital pressure is low. "
-            "The business converts operations into cash quickly."
-        )
+    # Calculations
+    # Operating Cycle = Inventory Days + Receivable Days
+    inventory_days_total = raw_materials_days + processing_days + finished_goods_days
+    operating_cycle = inventory_days_total + receivables_days
+    cash_conversion_cycle = operating_cycle - payables_days
+
+    if run_analysis:
+        st.divider()
+        st.subheader("🧮 Results & Metrics")
+        
+        col_res1, col_res2, col_res3 = st.columns(3)
+        
+        with col_res1:
+            st.metric("Inventory Period", f"{inventory_days_total} Days")
+            st.caption("Total time in stock/production.")
+            
+        with col_res2:
+            st.metric("Operating Cycle", f"{operating_cycle} Days")
+            st.caption("Total time from order to payment.")
+
+        with col_res3:
+            st.metric("Cash Cycle (CCC)", f"{cash_conversion_cycle} Days", delta=None)
+            st.caption("Self-financing requirement.")
+
+        # Analytical Insight
+        st.divider()
+        st.subheader("🧠 Managerial Verdict")
+        
+        if cash_conversion_cycle > 150:
+            st.error(
+                f"**Critical Liquidity Pressure:** The business must self-finance operations for **{cash_conversion_cycle} days**. "
+                "High dependency on external credit lines. Consider optimizing raw material safety stocks or accelerating collections."
+            )
+        elif cash_conversion_cycle < 60:
+            st.success(
+                f"**High Efficiency:** With a cycle of **{cash_conversion_cycle} days**, working capital turnover is fast. "
+                "The business generates cash rapidly from its operations, reducing the need for debt."
+            )
+        else:
+            st.warning(
+                f"**Moderate Pressure:** A cycle of **{cash_conversion_cycle} days** is standard for many industries, "
+                "but potential for cash liberation exists in shortening the processing phase."
+            )
+
+        # Strategic Breakdown Table
+        st.subheader("📈 Strategic Breakdown")
+        st.table({
+            "Phase": ["Inventory Storage", "Production Time", "Sales Collection", "Supplier Credit (Offset)"],
+            "Days": [raw_materials_days + finished_goods_days, processing_days, receivables_days, -payables_days]
+        })
 
     else:
-        st.warning(
-            "🟠 Moderate cash cycle.\n\n"
-            "The business operates within a normal range, "
-            "but improvements in inventory or credit terms could free cash."
-        )
+        st.info("👈 Adjust the cycle components in the sidebar and click 'Calculate Cycle'.")
 
-    st.markdown("---")
-
-    st.caption(
-        "⚠️ This tool focuses on **liquidity timing**, not profitability. "
-        "A profitable company can still fail if the cash cycle is too long."
-    )
+if __name__ == "__main__":
+    run_cash_cycle_app()
