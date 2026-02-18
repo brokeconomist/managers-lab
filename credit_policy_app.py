@@ -61,8 +61,8 @@ def show_credit_policy_analysis():
     current_credit_sales = current_sales * (1 - current_cash_pct)
     new_credit_sales = (current_sales * (1 + sales_inc_pct)) * (1 - new_cash_pct)
 
-    capital_in_receivables_new = (new_credit_sales / (360 / new_credit_days)) * (avg_cost_per_unit / unit_price)
-    capital_in_receivables_old = (current_credit_sales / (360 / current_credit_days)) * (total_unit_cost / unit_price)
+    capital_in_receivables_new = (new_credit_sales / (365 / new_credit_days)) * (avg_cost_per_unit / unit_price)
+    capital_in_receivables_old = (current_credit_sales / (365 / current_credit_days)) * (total_unit_cost / unit_price)
     
     financial_cost = (capital_in_receivables_new - capital_in_receivables_old) * wacc
 
@@ -102,3 +102,4 @@ def show_credit_policy_analysis():
 
 if __name__ == "__main__":
     show_credit_policy_analysis()
+
