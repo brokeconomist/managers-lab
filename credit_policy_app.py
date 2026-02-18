@@ -1,251 +1,104 @@
 import streamlit as st
 
 # -------------------------------------------------
-# Formatting
+# Formatting Helpers
 # -------------------------------------------------
 def format_currency(value, decimals=2):
     try:
         formatted = f"{value:,.{decimals}f}"
-        return f"€ {formatted}"
+        return f"€ {formatted}".replace(",", "X").replace(".", ",").replace("X", ".")
     except Exception:
         return f"€ {value}"
-
 
 # -------------------------------------------------
 # MAIN APP
 # -------------------------------------------------
 def show_credit_policy_analysis():
     st.header("🧾 Credit Policy Impact (Accounting View)")
-    st.caption(
-        "Evaluates whether expanding customer credit increases profits "
-        "using operational and accounting logic."
-    )
+    st.write("Quantitative assessment of loosening credit terms to drive volume.")
 
-    st.markdown(
-        """
-        This tool answers a **simple managerial question**:
+    # SIDEBAR: Strategic Inputs
+    with st.sidebar:
+        st.header("📍 Policy Parameters")
+        
+        with st.expander("Current State", expanded=True):
+            current_sales = st.number_input("Annual Sales (€)", value=20000000.0)
+            current_cash_pct = st.slider("Current Cash Sales (%)", 0, 100, 50) / 100
+            current_credit_days = st.number_input("Current Credit Days", value=60)
+        
+        with st.expander("Proposed Change", expanded=True):
+            sales_inc_pct = st.slider("Expected Sales Increase (%)", 0, 100, 20) / 100
+            new_cash_pct = st.slider("New Cash Sales (%)", 0, 100, 20) / 100
+            new_credit_days = st.number_input("New Credit Days", value=90)
+            bad_debt_pct = st.slider("Expected Bad Debts (%)", 0.0, 20.0, 2.0) / 100
 
-        > *If I loosen my credit policy, will the extra sales cover  
-        > the extra risk and financing cost — **without financial modeling**?*
+        with st.expander("Cost Structure", expanded=False):
+            unit_price = st.number_input("Unit Selling Price (€)", value=20.0)
+            total_unit_cost = st.number_input("Total Unit Cost (€)", value=18.0)
+            variable_unit_cost = st.number_input("Variable Unit Cost (€)", value=14.0)
+            wacc = st.number_input("Cost of Capital (%)", value=10.0) / 100
 
-        It is **not** a valuation tool.  
-        It is a **go / no-go operating decision**.
-        """
-    )
+        run = st.button("Calculate Policy Impact")
 
-    st.markdown("---")
+    # MAIN SCREEN: Analysis
+    if not run:
+        st.info("💡 Adjust the policy parameters in the sidebar and click 'Calculate' to see the impact on operating profit.")
+        return
 
-    # =================================================
-    # CURRENT POLICY
-    # =================================================
-    st.subheader("📍 Current Credit Policy")
-    st.caption("How sales are structured today.")
+    # --- CALCULATION LOGIC ---
+    base_units = current_sales / unit_price
+    increased_units = base_units * sales_inc_pct
+    total_new_units = base_units + increased_units
 
-    with st.form("credit_policy_form"):
-        col1, col2 = st.columns(2)
+    # 1. Incremental Profit
+    profit_increase = increased_units * (unit_price - variable_unit_cost)
 
-        with col1:
-            current_cash = (
-                st.number_input(
-                    "Cash Sales (%) – Current",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=50.0
-                ) / 100
-            )
-            st.caption("Share of sales paid immediately.")
+    # 2. Capital Lock-up Cost
+    avg_cost_per_unit = (
+        (base_units * total_unit_cost) + (increased_units * variable_unit_cost)
+    ) / total_new_units
 
-            current_credit_pct = (
-                st.number_input(
-                    "Credit Sales (%) – Current",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=50.0
-                ) / 100
-            )
-            st.caption("Share of sales sold on credit.")
+    current_credit_sales = current_sales * (1 - current_cash_pct)
+    new_credit_sales = (current_sales * (1 + sales_inc_pct)) * (1 - new_cash_pct)
 
-        with col2:
-            current_credit_days = st.number_input(
-                "Credit Days – Current",
-                min_value=0,
-                value=60
-            )
-            st.caption("Average collection period for current credit sales.")
+    capital_in_receivables_new = (new_credit_sales / (360 / new_credit_days)) * (avg_cost_per_unit / unit_price)
+    capital_in_receivables_old = (current_credit_sales / (360 / current_credit_days)) * (total_unit_cost / unit_price)
+    
+    financial_cost = (capital_in_receivables_new - capital_in_receivables_old) * wacc
 
-        st.markdown("---")
+    # 3. Risk Cost
+    bad_debts_cost = (current_sales * (1 + sales_inc_pct)) * bad_debt_pct
 
-        # =================================================
-        # PROPOSED POLICY
-        # =================================================
-        st.subheader("🆕 Proposed Credit Policy")
-        st.caption("What changes you are considering.")
+    # Final Result
+    total_extra_costs = financial_cost + bad_debts_cost
+    net_impact = profit_increase - total_extra_costs
 
-        col3, col4 = st.columns(2)
+    # --- DISPLAY RESULTS ---
+    st.divider()
+    st.subheader("📊 Decision Dashboard")
 
-        with col3:
-            new_cash = (
-                st.number_input(
-                    "Cash Sales (%) – New",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=20.0
-                ) / 100
-            )
-            st.caption("Expected cash share after the policy change.")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Incremental Profit", format_currency(profit_increase))
+    col2.metric("Extra Risk & Funding", format_currency(total_extra_costs), delta_color="inverse")
+    col3.metric("Net Operational Impact", format_currency(net_impact))
 
-            new_credit_pct = (
-                st.number_input(
-                    "Credit Sales (%) – New",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=80.0
-                ) / 100
-            )
-            st.caption("Expected credit share after the policy change.")
+    
 
-        with col4:
-            new_credit_days = st.number_input(
-                "Credit Days – New",
-                min_value=0,
-                value=90
-            )
-            st.caption("New average collection period.")
+    st.divider()
+    st.subheader("🧠 Cold Analysis Verdict")
 
-        st.markdown("---")
+    if net_impact > 0:
+        st.success(f"✅ **GO:** The credit expansion is justified. For every €1 of extra cost, you generate €{profit_increase/total_extra_costs:.2f} in margin.")
+    else:
+        st.error("❌ **NO-GO:** Loosening credit destroys value. The financing of the 'float' and the default risk outweigh the gains from volume.")
 
-        # =================================================
-        # SALES & COST DATA
-        # =================================================
-        st.subheader("📈 Sales & Cost Structure")
-        st.caption("Used to estimate incremental profit and risk.")
+    with st.expander("View Detailed Cost Breakdown"):
+        st.write(f"**Capital Tied in Receivables (New):** {format_currency(capital_in_receivables_new)}")
+        st.write(f"**Capital Tied in Receivables (Old):** {format_currency(capital_in_receivables_old)}")
+        st.write(f"**Annual Opportunity Cost of Capital:** {format_currency(financial_cost)}")
+        st.write(f"**Projected Bad Debt Expense:** {format_currency(bad_debts_cost)}")
 
-        sales_increase = (
-            st.number_input(
-                "Expected Sales Increase (%)",
-                min_value=0.0,
-                value=20.0
-            ) / 100
-        )
-        st.caption("Expected volume increase due to looser credit.")
+    st.caption("ℹ️ Accounting View: This model assumes linear costs and fixed default rates across the new sales volume.")
 
-        current_sales = st.number_input(
-            "Current Annual Sales (€)",
-            min_value=0.0,
-            value=20_000_000.0
-        )
-
-        unit_price = st.number_input(
-            "Unit Selling Price (€)",
-            min_value=0.01,
-            value=20.0
-        )
-
-        total_unit_cost = st.number_input(
-            "Total Unit Cost (€)",
-            min_value=0.01,
-            value=18.0
-        )
-        st.caption("Includes fixed + variable components.")
-
-        variable_unit_cost = st.number_input(
-            "Variable Unit Cost (€)",
-            min_value=0.01,
-            value=14.0
-        )
-
-        expected_bad_debts = (
-            st.number_input(
-                "Expected Bad Debts (%)",
-                min_value=0.0,
-                max_value=100.0,
-                value=2.0
-            ) / 100
-        )
-        st.caption("Estimated default rate on credit sales.")
-
-        interest_rate = (
-            st.number_input(
-                "Cost of Capital (% per year)",
-                min_value=0.0,
-                max_value=100.0,
-                value=10.0
-            ) / 100
-        )
-        st.caption("Opportunity cost of capital tied in receivables.")
-
-        submitted = st.form_submit_button("Run Credit Decision Check")
-
-    # =================================================
-    # CALCULATION (UNCHANGED LOGIC)
-    # =================================================
-    if submitted:
-        base_units = current_sales / unit_price
-        increased_units = base_units * sales_increase
-
-        profit_increase = increased_units * (unit_price - variable_unit_cost)
-
-        avg_cost_per_unit = (
-            ((base_units * total_unit_cost) +
-             (increased_units * variable_unit_cost))
-            / (base_units + increased_units)
-        )
-
-        new_credit_sales = (current_sales * (1 + new_cash)) * new_credit_pct
-        current_credit_sales = current_sales * current_cash
-
-        capital_cost_new = (
-            new_credit_sales / (360 / new_credit_days)
-        ) * (avg_cost_per_unit / unit_price)
-
-        capital_cost_current = (
-            current_credit_sales / (360 / current_credit_days)
-        ) * (total_unit_cost / unit_price)
-
-        capital_cost_difference = capital_cost_new - capital_cost_current
-        financial_cost = capital_cost_difference * interest_rate
-
-        bad_debts_cost = (
-            current_sales * expected_bad_debts
-            + current_sales * expected_bad_debts * sales_increase
-        )
-
-        total_cost = financial_cost + bad_debts_cost
-        anticipated_gain = profit_increase - total_cost
-
-        # =================================================
-        # RESULTS
-        # =================================================
-        st.markdown("---")
-        st.subheader("📊 Decision Outcome")
-
-        st.metric(
-            "Incremental Operating Profit",
-            format_currency(profit_increase)
-        )
-
-        st.metric(
-            "Additional Financing & Risk Cost",
-            format_currency(total_cost)
-        )
-
-        st.metric(
-            "Net Impact",
-            format_currency(anticipated_gain)
-        )
-
-        if anticipated_gain > 0:
-            st.success(
-                "✅ Credit expansion is justified **from an accounting perspective**.\n\n"
-                "Additional sales cover financing costs and bad debt risk."
-            )
-        else:
-            st.error(
-                "❌ Credit expansion destroys value at the operating level.\n\n"
-                "Higher risk and capital lock-up exceed the profit from extra sales."
-            )
-
-        st.caption(
-            "ℹ️ This result ignores time value of money. "
-            "Use the **Credit Policy – Present Value** tool for financial valuation."
-        )
+if __name__ == "__main__":
+    show_credit_policy_analysis()
