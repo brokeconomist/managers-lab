@@ -108,13 +108,15 @@ def show_break_even_shift_calculator():
 
         run = st.button("Run Strategic Analysis")
 
-    if run:
+        if run:
         # Data Aggregation
         fixed_total = parse_number_en(f_costs) + parse_number_en(f_invest)
         target_profit = parse_number_en(t_profit)
 
-        base_p, base_c, base_v = parse_number_en(u_price), parse_number_en(u_cost), parse_number_en(u_sold)
-        
+        base_p = parse_number_en(u_price)
+        base_c = parse_number_en(u_cost)
+        base_v = parse_number_en(u_sold)
+
         stress_p = base_p * (1 + p_stress / 100)
         stress_c = base_c * (1 + c_stress / 100)
         stress_v = base_v * (1 + v_stress / 100)
@@ -126,43 +128,85 @@ def show_break_even_shift_calculator():
             st.error("🔴 Fatal Error: Contribution margin is non-positive in one of the scenarios.")
             return
 
-        # 1. Comparison Dashboard
+        # -----------------------------
+        # 1. Scenario Comparison Table
+        # -----------------------------
+
         st.subheader("📊 Scenario Comparison")
-        
+
         comparison_df = pd.DataFrame({
-            "Metric": ["Required Units (incl. Profit)", "Projected Net Profit", "Margin of Safety (%)", "Risk Index (0-100)"],
+            "Metric": [
+                "Required Units",
+                "Projected Net Profit",
+                "Margin of Safety (%)",
+                "Risk Index (0-100)"
+            ],
             "Base Case": [
-                f"{int(base_metrics['required_units'])} units",
+                f"{int(base_metrics['required_units'])}",
                 f"${base_metrics['profit']:,.0f}",
                 f"{base_metrics['mos']*100:.1f}%",
                 f"{base_metrics['risk']}"
             ],
             "Stress Case": [
-                f"{int(stress_metrics['required_units'])} units",
+                f"{int(stress_metrics['required_units'])}",
                 f"${stress_metrics['profit']:,.0f}",
                 f"{stress_metrics['mos']*100:.1f}%",
                 f"{stress_metrics['risk']}"
             ]
         })
+
         st.table(comparison_df)
 
-        # 2. Visualization
+        # -----------------------------
+        # 2. Delta Impact Analysis
+        # -----------------------------
+
+        st.subheader("📉 Impact Analysis (Stress vs Base)")
+
+        delta_profit = stress_metrics["profit"] - base_metrics["profit"]
+        delta_risk = stress_metrics["risk"] - base_metrics["risk"]
+        delta_mos = stress_metrics["mos"] - base_metrics["mos"]
+
+        c1, c2, c3 = st.columns(3)
+
+        c1.metric("Δ Profit", f"${delta_profit:,.0f}")
+        c2.metric("Δ Risk", f"{delta_risk}")
+        c3.metric("Δ Margin of Safety", f"{delta_mos*100:.1f}%")
+
+        # -----------------------------
+        # 3. Executive Decision Engine
+        # -----------------------------
+
+        st.divider()
+        st.subheader("🧠 Executive Strategic Assessment")
+
+        if stress_metrics["risk"] > 75:
+            st.error("🔴 STRATEGIC RED FLAG: Model becomes unstable under stress. Repricing or cost restructuring required.")
+        elif stress_metrics["risk"] > 50:
+            st.warning("🟠 CAUTION: Model weakens significantly under stress. Monitor margins closely.")
+        else:
+            st.success("🟢 RESILIENT: Business model maintains structural stability under stress.")
+
+        # Strategic Recommendation Logic
+        if stress_metrics["profit"] < 0:
+            st.info("Recommendation: Increase price or reduce fixed exposure immediately.")
+        elif stress_metrics["mos"] < 0.10:
+            st.info("Recommendation: Improve contribution margin to widen safety buffer.")
+        else:
+            st.info("Recommendation: Current structure supports scaling.")
+
+        # -----------------------------
+        # 4. Visualization
+        # -----------------------------
+
         st.divider()
         st.subheader("📈 Stress Scenario Visualization")
-        
-        
-        
+
         plot_break_even(fixed_total, target_profit, stress_p, stress_c, stress_v)
 
-        # 3. Risk Indicator
-        st.markdown(f"**Stress Risk Assessment:** {stress_metrics['risk']}/100")
-        risk_color = "green" if stress_metrics["risk"] < 40 else "orange" if stress_metrics["risk"] < 75 else "red"
-        st.progress(stress_metrics["risk"] / 100)
-        
-        if stress_metrics["risk"] > 75:
-            st.error("High system fragility detected in stress scenario.")
-        elif stress_metrics["risk"] < 40:
-            st.success("Business model shows high resilience.")
+        # -----------------------------
+        # 5. Risk Bar (Visual Signal)
+        # -----------------------------
 
-if __name__ == "__main__":
-    show_break_even_shift_calculator()
+        st.markdown(f"**Stress Risk Score:** {stress_metrics['risk']}/100")
+        st.progress(stress_metrics["risk"] / 100)
