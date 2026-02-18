@@ -13,7 +13,7 @@ from loss_threshold import show_loss_threshold_before_price_cut
 from credit_policy_app import show_credit_policy_analysis
 from supplier_credit_app import show_supplier_credit_analysis
 from cash_cycle import run_cash_cycle_app
-from loan_vs_leasing_calculator import show_loan_vs_leasing_analysis
+from loan_vs_leasing_calculator import loan_vs_leasing_ui
 from unit_cost_app import show_unit_cost_app
 from discount_npv_ui import show_discount_npv_ui
 from credit_days_calculator import show_credit_days_calculator
@@ -60,7 +60,7 @@ tool_categories = {
         ("Cash Cycle Calculator", run_cash_cycle_app),
         ("Credit Policy Analysis", show_credit_policy_analysis),
         ("Supplier Payment Analysis", show_supplier_credit_analysis),
-        ("Loan vs Leasing Analysis", show_loan_vs_leasing_analysis),
+        ("Loan vs Leasing Analysis", show_loan_vs_leasing_ui),
         ("Cash Fragility Index", show_cash_fragility_index),
     ],
 
