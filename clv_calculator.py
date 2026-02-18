@@ -2,16 +2,22 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. Calculation Engine
+# -----------------------
+# Calculation Engine
+# -----------------------
 def get_clv_data(purchases, price, cost, marketing, retention, discount, churn, realization, risk_p, cac):
+    # Contribution Margin per period
     cm = (purchases * (price - cost)) - marketing
+    # Risk-Adjusted Discount Rate
     adj_disc = discount + risk_p
     cum_npv = -cac
     data = []
     payback = None
     
     for t in range(1, int(retention) + 1):
+        # Survival Probability (Retention)
         survival = (1 - churn) ** t
+        # Discounted Cash Flow adjusted for realization and survival
         flow = (cm * realization * survival) / ((1 + adj_disc) ** t)
         cum_npv += flow
         data.append({"Year": t, "Cumulative_NPV": cum_npv})
@@ -20,73 +26,98 @@ def get_clv_data(purchases, price, cost, marketing, retention, discount, churn, 
             
     return pd.DataFrame(data), cum_npv, payback
 
-# 2. Main Interface Function
+# -----------------------
+# Main Interface Function
+# -----------------------
 def show_clv_calculator():
-    st.title("👥 Strategic CLV & Sensitivity Analysis")
-    st.markdown("---")
+    st.header("👥 Executive CLV Scenario Simulator")
+    st.write("Evaluate Customer Lifetime Value resilience using Discounted & Risk-Adjusted NPV modeling.")
     
     st.info("""
-    **Analytical Framework:** This tool evaluates the Net Present Value (NPV) of a customer and identifies which strategic levers 
-    (Price, Volume, or Retention) drive the most value using a **Tornado Sensitivity Analysis**.
+    **Analytical Framework:** This simulator compares a **Base Case** against a **Target/Stress Case** to quantify the value gap. 
+    It incorporates churn probabilities and risk premiums to derive the 'Behavioral NPV'.
     """)
 
-    # Input Columns for Scenario Comparison
+    # 1. Input Section
     col_input1, col_input2 = st.columns(2)
     
     with col_input1:
-        st.subheader("📊 Scenario A (Current)")
-        p_a = st.number_input("Expected Purchases/Year (A)", value=10.0, key="p_a")
-        pr_a = st.number_input("Price per Purchase (A) $", value=100.0, key="pr_a")
-        cac_a = st.number_input("Acquisition Cost (CAC) (A) $", value=150.0, key="cac_a")
-        ch_a = st.number_input("Churn Rate (A) (e.g. 0.05)", value=0.05, key="ch_a")
+        st.subheader("📊 Scenario A (Base)")
+        p_a = st.number_input("Purchases / Year (A)", value=10.0, key="p_a")
+        pr_a = st.number_input("Price / Purchase (A) $", value=100.0, key="pr_a")
+        cac_a = st.number_input("Acquisition Cost (A) $", value=150.0, key="cac_a")
+        ch_a = st.number_input("Churn Rate (A)", value=0.05, format="%.3f", key="ch_a")
 
     with col_input2:
         st.subheader("🚀 Scenario B (Target)")
-        p_b = st.number_input("Expected Purchases/Year (B)", value=12.0, key="p_b")
-        pr_b = st.number_input("Price per Purchase (B) $", value=110.0, key="pr_b")
-        cac_b = st.number_input("Acquisition Cost (CAC) (B) $", value=150.0, key="cac_b")
-        ch_b = st.number_input("Churn Rate (B) (e.g. 0.03)", value=0.03, key="ch_b")
+        p_b = st.number_input("Purchases / Year (B)", value=12.0, key="p_b")
+        pr_b = st.number_input("Price / Purchase (B) $", value=110.0, key="pr_b")
+        cac_b = st.number_input("Acquisition Cost (B) $", value=150.0, key="cac_b")
+        ch_b = st.number_input("Churn Rate (B)", value=0.03, format="%.3f", key="ch_b")
 
-    # Fixed Risk Variables
-    with st.expander("⚠️ Underlying Risk Assumptions (Common to both)"):
-        cost = st.number_input("Unit Cost $", value=60.0)
-        mkt = st.number_input("Retention Marketing/Year $", value=20.0)
-        disc = st.number_input("Base Discount Rate", value=0.08)
-        real = st.number_input("Purchase Realization", value=0.85)
+    with st.expander("⚠️ Underlying Risk & Cost Assumptions (Common)"):
+        cost = st.number_input("Variable Cost per Purchase $", value=60.0)
+        mkt = st.number_input("Retention Marketing / Year $", value=20.0)
+        disc = st.number_input("Base Discount Rate (e.g., 0.08)", value=0.08)
+        real = st.number_input("Purchase Realization Rate", value=0.85)
         risk_p = st.number_input("Customer Risk Premium", value=0.03)
-        ret = st.slider("Retention Horizon (Years)", 1, 15, 5)
+        ret = st.slider("Analysis Horizon (Years)", 1, 15, 5)
 
-    if st.button("Execute Comparative Analysis"):
-        # Base Calculations
-        _, final_a, pb_a = get_clv_data(p_a, pr_a, cost, mkt, ret, disc, ch_a, real, risk_p, cac_a)
-        _, final_b, pb_b = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
-        base_gap = final_b - final_a
+    if st.button("Execute Strategic CLV Analysis"):
+        # 2. Run Calculations
+        df_a, final_a, pb_a = get_clv_data(p_a, pr_a, cost, mkt, ret, disc, ch_a, real, risk_p, cac_a)
+        df_b, final_b, pb_b = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
+        
+        # 3. Scenario Comparison Table
+        st.divider()
+        st.subheader("📊 Scenario Comparison")
+        
+        comparison_df = pd.DataFrame({
+            "Metric": ["Risk-Adjusted CLV (NPV)", "Payback Period", "LTV/CAC Ratio", "Survival Prob. (End of Term)"],
+            "Scenario A": [
+                f"${final_a:,.2f}",
+                f"{pb_a} Yrs" if pb_a else "N/A",
+                f"{(final_a + cac_a)/cac_a:.2f}x" if cac_a > 0 else "N/A",
+                f"{(1-ch_a)**ret:.1%}"
+            ],
+            "Scenario B": [
+                f"${final_b:,.2f}",
+                f"{pb_b} Yrs" if pb_b else "N/A",
+                f"{(final_b + cac_b)/cac_b:.2f}x" if cac_b > 0 else "N/A",
+                f"{(1-ch_b)**ret:.1%}"
+            ]
+        })
+        st.table(comparison_df)
 
-        # --- Tornado Logic (Impact on Value Gap) ---
-        # We calculate how much the GAP changes if we reset each variable in Scenario B back to Scenario A
-        impacts = {}
+        # 4. Delta Variance Analysis
+        c1, c2, c3 = st.columns(3)
+        v_gap = final_b - final_a
+        v_pct = (final_b / final_a - 1) * 100 if final_a != 0 else 0
         
-        # 1. Price Impact
-        _, val, _ = get_clv_data(p_b, pr_a, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
-        impacts["Price Effect"] = final_b - val
-        
-        # 2. Volume Impact
-        _, val, _ = get_clv_data(p_a, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
-        impacts["Purchase Frequency Effect"] = final_b - val
-        
-        # 3. Churn Impact
-        _, val, _ = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_a, real, risk_p, cac_b)
-        impacts["Retention (Churn) Effect"] = final_b - val
-        
-        # 4. CAC Impact
-        _, val, _ = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_a)
-        impacts["Acquisition Cost Effect"] = final_b - val
+        c1.metric("Value Gap (Δ CLV)", f"${v_gap:,.2f}", f"{v_pct:.1f}%")
+        c2.metric("Efficiency Gain", f"{((final_b+cac_b)/cac_b - (final_a+cac_a)/cac_a):.2f}x")
+        c3.metric("Retention Δ", f"{(ch_a - ch_b)*100:.1f} pts")
 
-        # Sort for Tornado
-        sorted_impacts = dict(sorted(impacts.items(), key=lambda item: abs(item[1])))
-
-        # --- 1. Tornado Chart ---
+        # 5. Tornado Sensitivity Chart
+        st.divider()
         st.subheader("🌪️ Value Driver Sensitivity (Impact on Gap)")
+        
+        impacts = {}
+        # Isolate Price Effect
+        _, v, _ = get_clv_data(p_b, pr_a, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
+        impacts["Price Strategy"] = final_b - v
+        # Isolate Volume Effect
+        _, v, _ = get_clv_data(p_a, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_b)
+        impacts["Purchase Frequency"] = final_b - v
+        # Isolate Churn Effect
+        _, v, _ = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_a, real, risk_p, cac_b)
+        impacts["Customer Retention"] = final_b - v
+        # Isolate CAC Effect
+        _, v, _ = get_clv_data(p_b, pr_b, cost, mkt, ret, disc, ch_b, real, risk_p, cac_a)
+        impacts["Acquisition Efficiency"] = final_b - v
+
+        sorted_impacts = dict(sorted(impacts.items(), key=lambda item: abs(item[1])))
+        
         fig_tornado = go.Figure(go.Bar(
             y=list(sorted_impacts.keys()),
             x=list(sorted_impacts.values()),
@@ -95,35 +126,38 @@ def show_clv_calculator():
             text=[f"${v:,.2f}" for v in sorted_impacts.values()],
             textposition='auto',
         ))
-        fig_tornado.update_layout(
-            title="Contribution to Total Value Improvement ($)",
-            xaxis_title="Added Value ($)",
-            yaxis_title="Variable Lever"
-        )
+        fig_tornado.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20))
         st.plotly_chart(fig_tornado, use_container_width=True)
         
 
-        # --- 2. Executive Metrics Summary ---
-        st.markdown("### 📋 Executive Results")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Value Gap", f"${base_gap:,.2f}", f"{((final_b/final_a)-1)*100:.1f}%")
-        m2.metric("LTV/CAC (Scenario B)", f"{(final_b + cac_b) / cac_b:.2f}x")
-        m3.metric("Payback (Scenario B)", f"Year {pb_b}" if pb_b else "N/A")
-        
-
-        # --- 3. Insights ---
+        # 6. Strategic Assessment
         st.divider()
-        st.subheader("💡 Strategic Insight")
+        st.subheader("🧠 Strategic Assessment")
         top_driver = max(impacts, key=impacts.get)
-        st.write(f"The analysis indicates that **{top_driver}** is your strongest lever. Focusing effort here will yield the highest marginal return per customer.")
+        
+        col_text1, col_text2 = st.columns(2)
+        with col_text1:
+            st.write(f"**Primary Leverage Point:** {top_driver}")
+            st.write("Focusing resources on this variable provides the highest marginal utility for the business model.")
+        
+        with col_text2:
+            if final_b < 0:
+                st.error("🔴 UNVIABLE: Scenario B results in a negative NPV. The customer acquisition cost exceeds lifetime value.")
+            elif (final_b + cac_b)/cac_b < 3.0:
+                st.warning("🟠 MARGINAL: LTV/CAC ratio is below 3.0x. Scaling may be inefficient.")
+            else:
+                st.success("🟢 SCALABLE: Robust LTV/CAC ratio detected. Unit economics support aggressive growth.")
 
-        # --- 4. Detailed Metrics Table ---
-        st.subheader("📊 Comparative Metrics Table")
-        st.table(pd.DataFrame({
-            "Metric": ["Risk-Adjusted CLV (Behavioral NPV)", "Payback Period", "LTV/CAC Ratio"],
-            "Scenario A": [f"${final_a:,.2f}", f"{pb_a} Yrs" if pb_a else "N/A", f"{(final_a+cac_a)/cac_a:.2f}x"],
-            "Scenario B": [f"${final_b:,.2f}", f"{pb_b} Yrs" if pb_b else "N/A", f"{(final_b+cac_b)/cac_b:.2f}x"]
-        }))
+        # 7. NPV Timeline Visualization
+        st.divider()
+        st.subheader("📉 Cumulative Risk-Adjusted NPV Projection")
+        fig_line = go.Figure()
+        fig_line.add_trace(go.Scatter(x=df_a['Year'], y=df_a['Cumulative_NPV'], name='Scenario A', line=dict(color='#EF553B', dash='dash')))
+        fig_line.add_trace(go.Scatter(x=df_b['Year'], y=df_b['Cumulative_NPV'], name='Scenario B', line=dict(color='#00CC96', width=4)))
+        fig_line.add_hline(y=0, line_dash="dot", line_color="white")
+        fig_line.update_layout(xaxis_title="Years", yaxis_title="Cumulative NPV ($)", height=500)
+        st.plotly_chart(fig_line, use_container_width=True)
+        
 
 if __name__ == "__main__":
     show_clv_calculator()
