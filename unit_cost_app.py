@@ -52,47 +52,47 @@ def show_unit_cost_app():
     # SIDEBAR: Inputs
     with st.sidebar:
         st.subheader("Production Volume")
-        sales_regular = st.number_input("Regular Units Produced", value=1000, min_value=1)
-        sales_overtime = st.number_input("Overtime Units Produced", value=100, min_value=0)
+        s_reg = st.number_input("Regular Units Produced", value=1000, min_value=1)
+        s_ot = st.number_input("Overtime Units Produced", value=100, min_value=0)
         
         st.divider()
         st.subheader("Variable & Fixed Costs")
-        raw_material_cost = st.number_input("Total Raw Material Cost (€)", value=1500.0)
+        rm_cost = st.number_input("Total Raw Material Cost (€)", value=1500.0)
         
-        st.markdown("**Operating Costs**")
-        operating_reg = st.number_input("Regular Operating Cost (€)", value=4000.0)
-        operating_ot = st.number_input("Overtime Operating Cost (€)", value=400.0)
+        # Using markdown for bold headers in sidebar
+        st.markdown("**Operating Expenses**")
+        op_reg = st.number_input("Regular Operating Cost (€)", value=4000.0)
+        op_ot = st.number_input("Overtime Operating Cost (€)", value=400.0)
         
-        st.markdown("**Labor Costs**")
-        labor_reg = st.number_input("Regular Labor Cost (€)", value=8000.0)
-        labor_ot = st.number_input("Overtime Labor Cost (€)", value=1200.0)
+        st.markdown("**Labor Expenses**")
+        lab_reg = st.number_input("Regular Labor Cost (€)", value=8000.0)
+        lab_ot = st.number_input("Overtime Labor Cost (€)", value=1200.0)
 
         st.divider()
-        selling_price = st.number_input("Target Selling Price (€/unit)", value=20.0)
+        sell_price = st.number_input("Target Selling Price (€/unit)", value=20.0)
         
         run_calc = st.button("Execute Cost Analysis")
 
     if run_calc:
-        # Calculations
-        avg_total, avg_regular, avg_overtime = calculate_unit_costs(
-            sales_regular, sales_overtime, raw_material_cost,
-            operating_reg, operating_ot, labor_reg, labor_ot
+        # Calculations using the engine
+        avg_total, avg_reg, avg_ot = calculate_unit_costs(
+            s_reg, s_ot, rm_cost, op_reg, op_ot, lab_reg, lab_ot
         )
 
         # RESULTS SECTION
         st.subheader("📊 Cost Metrics")
-        col1, col2, col3 = st.columns(3)
+        c1, c2, c3 = st.columns(3)
         
-        col1.metric("Avg. Total Cost", f"{avg_total:.2f} €")
-        col2.metric("Regular Unit Cost", f"{avg_regular:.2f} €")
+        c1.metric("Avg. Total Cost", f"{avg_total:.2f} €")
+        c2.metric("Regular Unit Cost", f"{avg_reg:.2f} €")
         
-        # Calculate delta for overtime
-        delta_val = None
-        if avg_regular > 0 and sales_overtime > 0:
-            delta_val = f"{((avg_overtime/avg_regular)-1)*100:.1f}% Increase"
+        # Logic for overtime metric delta
+        ot_delta = None
+        if avg_reg > 0 and s_ot > 0:
+            ot_delta = f"{((avg_ot/avg_reg)-1)*100:.1f}% vs Reg"
             
-        col3.metric("Overtime Unit Cost", f"{avg_overtime:.2f} €", 
-                   delta=delta_val,
+        c3.metric("Overtime Unit Cost", f"{avg_ot:.2f} €", 
+                   delta=ot_delta,
                    delta_color="inverse")
 
         st.divider()
@@ -100,46 +100,35 @@ def show_unit_cost_app():
         # MARGIN ANALYSIS
         st.subheader("💡 Managerial Insights")
         
-        margin_reg = selling_price - avg_regular
-        margin_ot = selling_price - avg_overtime if sales_overtime > 0 else 0
+        m_reg = sell_price - avg_reg
+        m_ot = sell_price - avg_ot if s_ot > 0 else 0
         
-        c_m1, c_m2 = st.columns(2)
-        c_m1.write(f"**Margin (Regular):** {margin_reg:.2f} € / unit")
-        if sales_overtime > 0:
-            c_m2.write(f"**Margin (Overtime):** {margin_ot:.2f} € / unit")
+        col_m1, col_m2 = st.columns(2)
+        col_m1.write(f"**Margin (Regular):** {m_reg:.2f} € / unit")
+        if s_ot > 0:
+            col_m2.write(f"**Margin (Overtime):** {m_ot:.2f} € / unit")
         else:
-            c_m2.write("**Margin (Overtime):** N/A (No OT production)")
+            col_m2.write("**Margin (Overtime):** N/A")
 
         
 
-[Image of a break-even analysis chart showing fixed and variable costs]
-
-
-        if sales_overtime > 0:
-            if avg_overtime > selling_price:
-                st.error(f"⚠️ **Warning:** Overtime unit cost ({avg_overtime:.2f} €) exceeds selling price. Additional orders are generating losses.")
-            elif avg_overtime > avg_regular:
-                st.warning(f"ℹ️ **Observation:** Overtime production is profitable but reduces unit margin by {avg_overtime - avg_regular:.2f} € compared to regular hours.")
+        if s_ot > 0:
+            if avg_ot > sell_price:
+                st.error(f"❌ **Loss Alert:** Overtime cost ({avg_ot:.2f} €) is higher than Selling Price. Stop OT or increase price.")
+            elif avg_ot > avg_reg:
+                st.warning(f"⚠️ **Margin Compression:** Overtime is profitable but costs {avg_ot - avg_reg:.2f} € more per unit than regular hours.")
             else:
-                st.success("✅ **Efficiency Note:** Overtime production maintains healthy margins.")
+                st.success("✅ **Optimal Efficiency:** Overtime production is currently cost-effective.")
 
         # Breakdown Table
-        st.subheader("📈 Detailed Expense Breakdown")
-        total_u = sales_regular + sales_overtime
+        st.subheader("📈 Detailed Breakdown per Unit")
+        total_v = s_reg + s_ot
         
-        breakdown_data = {
-            "Cost Category": ["Labor", "Operating", "Materials (allocated)"],
-            "Regular Unit (€)": [
-                labor_reg/sales_regular, 
-                operating_reg/sales_regular, 
-                raw_material_cost/total_u if total_u > 0 else 0
-            ],
-            "Overtime Unit (€)": [
-                labor_ot/sales_overtime if sales_overtime > 0 else 0, 
-                operating_ot/sales_overtime if sales_overtime > 0 else 0, 
-                raw_material_cost/total_u if total_u > 0 else 0
-            ]
+        data = {
+            "Category": ["Labor", "Operating", "Materials"],
+            "Regular (€)": [lab_reg/s_reg, op_reg/s_reg, rm_cost/total_v],
+            "Overtime (€)": [lab_ot/s_ot if s_ot > 0 else 0, op_ot/s_ot if s_ot > 0 else 0, rm_cost/total_v]
         }
-        st.table(pd.DataFrame(breakdown_data))
+        st.table(pd.DataFrame(data))
     else:
-        st.info("👈 Enter production and cost data in the sidebar and click 'Execute'.")
+        st.info("👈 Enter production data in the sidebar and click 'Execute'.")
