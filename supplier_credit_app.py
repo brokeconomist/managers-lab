@@ -1,6 +1,10 @@
 import streamlit as st
+import pandas as pd
 
-# ===== Calculation Logic =====
+# -----------------------
+# Calculation Engine
+# -----------------------
+
 def calculate_supplier_credit_gain(
     supplier_credit_days,
     discount_pct,
@@ -10,23 +14,17 @@ def calculate_supplier_credit_gain(
     total_unit_cost,
     interest_rate_pct
 ):
-    """
-    Compute the financial impact of taking supplier credit versus paying early for a discount.
-
-    Returns:
-        discount_gain: Gain from paying early and taking the discount
-        credit_cost: Opportunity cost of giving up credit terms
-        net_gain: Net benefit of paying early
-    """
     discount = discount_pct / 100
     clients = clients_pct / 100
     interest_rate = interest_rate_pct / 100
 
-    # Gain from discount for early payment
+    # Gain from taking the early payment discount
     discount_gain = current_sales * discount * clients
 
-    # Opportunity cost from lost supplier credit
+    # Opportunity cost: The interest we would have earned if we kept the money for the credit period
     average_cost_ratio = total_unit_cost / unit_price
+    
+    # Formula logic: Volume of capital * cost ratio * (days/360) * interest rate
     credit_benefit = (
         (current_sales / (360 / supplier_credit_days)) * average_cost_ratio
         - ((current_sales * (1 - clients)) / (360 / supplier_credit_days)) * average_cost_ratio
@@ -35,106 +33,79 @@ def calculate_supplier_credit_gain(
     net_gain = discount_gain - credit_benefit
     return discount_gain, credit_benefit, net_gain
 
-# ===== Utility =====
-def format_currency(amount):
-    return f"€ {amount:,.0f}".replace(",", ".")
+# -----------------------
+# UI Logic
+# -----------------------
 
-# ===== Streamlit UI =====
 def show_supplier_credit_analysis():
-    st.title("🏦 Supplier Credit Analysis")
-    st.caption(
-        "Evaluate whether **early payment with a discount** is more profitable than taking supplier credit."
-    )
+    st.header("🏦 Supplier Credit vs. Early Payment Discount")
+    st.write("Determine the optimal payment strategy: Leverage supplier credit or secure early payment discounts?")
 
-    # ===== Input Form =====
-    with st.form("supplier_credit_form"):
-        st.header("🔢 Input Data")
+    # SIDEBAR: Financial Variables
+    with st.sidebar:
+        st.subheader("Supplier Terms")
+        s_credit_days = st.number_input("Credit Period (Days)", value=60)
+        s_discount = st.number_input("Early Payment Discount (%)", value=2.0)
+        
+        st.divider()
+        st.subheader("Operational Data")
+        c_sales = st.number_input("Annual Sales (€)", value=2000000.0, step=10000.0)
+        u_price = st.number_input("Unit Selling Price (€)", value=20.0)
+        u_cost = st.number_input("Unit Total Cost (€)", value=18.0)
+        
+        st.divider()
+        st.subheader("Financial Context")
+        c_pay_pct = st.slider("% of Business Paid in Cash", 0, 100, 50)
+        wacc = st.number_input("Cost of Capital (WACC %)", value=10.0)
+        
+        run = st.button("Analyze Financial Impact")
 
-        st.subheader("📋 Supplier Terms & Discount")
-        col1, col2 = st.columns(2)
-
-        with col1:
-            supplier_credit_days = st.number_input(
-                "📆 Supplier Credit Days",
-                min_value=0,
-                value=60
-            )
-            st.caption("Number of days the supplier allows you to delay payment without penalty.")
-
-            discount_pct = st.number_input(
-                "💸 Early Payment Discount (%)",
-                min_value=0.0,
-                value=2.0
-            )
-            st.caption("Percentage discount offered if you pay earlier than the credit period.")
-
-            clients_pct = st.number_input(
-                "👥 % of Sales Paid in Cash",
-                min_value=0.0,
-                max_value=100.0,
-                value=50.0
-            )
-            st.caption("Proportion of sales where customers pay immediately (cash) vs on credit.")
-
-        with col2:
-            current_sales = st.number_input(
-                "💰 Current Sales (€)",
-                min_value=0.0,
-                value=2_000_000.0,
-                step=1_000.0,
-                format="%.0f"
-            )
-            st.caption("Total revenue from sales over the period considered.")
-
-            unit_price = st.number_input(
-                "📦 Unit Price (€)",
-                min_value=0.01,
-                value=20.0
-            )
-            st.caption("Price per unit sold.")
-
-            total_unit_cost = st.number_input(
-                "🧾 Total Unit Cost (€)",
-                min_value=0.01,
-                value=18.0
-            )
-            st.caption("Total cost per unit including materials, labor, and overhead.")
-
-            interest_rate_pct = st.number_input(
-                "🏦 Cost of Capital (%)",
-                min_value=0.0,
-                value=10.0
-            )
-            st.caption("Opportunity cost of capital (annualized rate).")
-
-        submitted = st.form_submit_button("🔍 Calculate")
-
-    # ===== Results =====
-    if submitted:
+    # MAIN SCREEN: Strategic Results
+    if run:
         discount_gain, credit_cost, net_gain = calculate_supplier_credit_gain(
-            supplier_credit_days, discount_pct, clients_pct,
-            current_sales, unit_price, total_unit_cost, interest_rate_pct
+            s_credit_days, s_discount, c_pay_pct,
+            c_sales, u_price, u_cost, wacc
         )
 
-        st.markdown("---")
-        st.subheader("📊 Results")
+        # 1. Executive Summary Metrics
+        st.subheader("📊 Strategic Indifference Point")
+        
+        # Effective Annual Interest Rate (EAR) of the discount
+        # Approx formula: (Discount % / (1 - Discount %)) * (360 / Credit Days)
+        approx_ear = (s_discount/100 / (1 - s_discount/100)) * (360 / s_credit_days) * 100
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric("✅ Gain from Discount", format_currency(discount_gain))
-        col2.metric("💸 Credit Opportunity Cost", format_currency(credit_cost))
-        col3.metric(
-            "🏁 Net Benefit",
-            format_currency(net_gain),
-            delta_color="normal" if net_gain >= 0 else "inverse"
-        )
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Net Economic Gain", f"€ {net_gain:,.0f}")
+        c2.metric("Discount Annualized Rate", f"{approx_ear:.1f}%")
+        c3.metric("Company WACC", f"{wacc:.1f}%")
 
-        st.caption(
-            "Discount Gain: benefit from paying early.\n"
-            "Credit Opportunity Cost: value lost by not using supplier credit.\n"
-            "Net Benefit: overall financial impact of the early payment decision."
-        )
-
+        # 2. Decision Matrix
+        st.divider()
+        st.subheader("🧠 Tactical Assessment")
+        
+        
+        
         if net_gain > 0:
-            st.success("👉 Early payment with this discount is profitable.")
+            st.success(f"✅ **PAY EARLY:** The annualized discount ({approx_ear:.1f}%) is higher than your cost of capital ({wacc:.1f}%). Paying early creates value.")
         else:
-            st.error("⚠️ Early payment with this discount is not profitable.")
+            st.error(f"❌ **USE CREDIT:** The supplier credit is 'cheaper' than the cost of funding the early payment. Maximize your DSO.")
+
+        # 3. Detailed Breakdown Table
+        st.divider()
+        st.subheader("📈 Scenario Components")
+        
+        breakdown_df = pd.DataFrame({
+            "Financial Component": ["Gross Savings from Discount", "Lost Interest (Credit Opportunity Cost)", "Net Strategic Impact"],
+            "Amount (€)": [f"€ {discount_gain:,.2f}", f"€ {credit_cost:,.2f}", f"€ {net_gain:,.2f}"]
+        })
+        st.table(breakdown_df)
+
+        # 4. Critical Insight
+        st.info(f"""
+        **Analytical Perspective:** By paying early, you are essentially 'lending' money back to your supplier in exchange for {s_discount}%. 
+        This is only rational if the **Internal Rate of Return (IRR)** of this discount exceeds your **WACC**. 
+        In this scenario, your IRR is {approx_ear:.1f}%.
+        """)
+
+if __name__ == "__main__":
+    show_supplier_credit_analysis()
