@@ -72,14 +72,14 @@ def show_break_even_shift_calculator():
 
         st.subheader("Financial Inputs")
         f_costs = st.text_input("Existing Fixed Costs", "10000.00")
-        f_invest = st.text_input("New Fixed Investment", "0.00")
-        t_profit = st.text_input("Target Profit", "0.00")
+        f_invest = st.text_input("New Fixed Investment", "5000.00")
+        t_profit = st.text_input("Target Profit", "2000.00")
 
         st.divider()
 
         u_price = st.text_input("Price per Unit", "11.00")
         u_cost = st.text_input("Variable Cost per Unit", "6.50")
-        u_sold = st.text_input("Units Currently Sold", "500")
+        u_sold = st.text_input("Units Currently Sold", "2500")
 
         st.divider()
 
