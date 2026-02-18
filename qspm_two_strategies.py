@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 # -------------------------------------------------
 # HELPERS
 # -------------------------------------------------
-
 def normalize_weights(weights):
     total = sum(weights)
     if total == 0:
@@ -14,219 +15,128 @@ def normalize_weights(weights):
 # -------------------------------------------------
 # MAIN UI
 # -------------------------------------------------
-
 def show_qspm_tool():
-
-    st.title("🧭 QSPM – Quantitative Strategic Planning Matrix")
-    st.subheader("Comparison of **two alternative strategies**")
+    st.header("🧭 QSPM – Quantitative Strategic Planning Matrix")
+    st.caption("Structured comparison of alternative strategic paths based on weighted attractiveness.")
 
     # -------------------------------------------------
-    # EXPLANATORY TEXT (CORE PHILOSOPHY)
+    # SIDEBAR: CONFIGURATION
     # -------------------------------------------------
+    with st.sidebar:
+        st.subheader("Decision Setup")
+        strategy_A = st.text_input("Strategy A Name", value="Market Expansion")
+        strategy_B = st.text_input("Strategy B Name", value="Product Innovation")
+        
+        st.divider()
+        num_criteria = st.number_input(
+            "Number of Strategic Criteria",
+            min_value=2, max_value=12, value=5, step=1
+        )
+        st.info("Assign weights based on relative importance (e.g., 1-10) and scores based on attractiveness (1-4).")
 
+    # -------------------------------------------------
+    # CORE PHILOSOPHY
+    # -------------------------------------------------
     st.markdown("""
-    ### How to use this tool
-
-    **What this tool does**
-    - Structures a strategic comparison between **two serious alternatives**
-    - Forces explicit **trade-offs**
-    - Makes your **assumptions visible and testable**
-
-    **What this tool does NOT do**
-    - ❌ It does **not** forecast the market  
-    - ❌ It does **not** estimate probabilities  
-    - ❌ It does **not** claim objectivity  
-
-    👉 All inputs reflect **your managerial judgment**.  
-    The model does **not decide** — it only shows which strategy is
-    **more consistent with your own assumptions**.
-
-    **Why only two strategies?**
-    Strategic decisions are rarely made among many options.
-    In practice:
-    - many ideas exist initially,
-    - most are rejected qualitatively,
-    - the real decision happens between **two viable paths**.
-
-    This tool is designed for that final comparison.
+    > This matrix quantifies **managerial judgment**. It doesn't replace the decision-maker; 
+    > it reveals which strategy is most consistent with your own priorities.
     """)
 
-    st.divider()
+    
 
     # -------------------------------------------------
-    # STRATEGY NAMES
+    # CRITERIA INPUT SECTION
     # -------------------------------------------------
+    st.subheader("1️⃣ Strategic Criteria & Scoring")
+    
+    criteria, weights, score_A, score_B = [], [], [], []
 
-    col1, col2 = st.columns(2)
-    with col1:
-        strategy_A = st.text_input("Strategy A name", value="Strategy A")
-    with col2:
-        strategy_B = st.text_input("Strategy B name", value="Strategy B")
-
-    st.divider()
-
-    # -------------------------------------------------
-    # CRITERIA INPUT
-    # -------------------------------------------------
-
-    st.subheader("1️⃣ Strategic Criteria")
-
-    st.markdown("""
-    Define the **key factors** that influence this strategic choice.
-
-    Typical sources:
-    - Pricing & break-even analysis
-    - Substitution pressure
-    - Cost structure & margins
-    - Market capacity constraints
-    - Risk & execution capability
-    """)
-
-    num_criteria = st.number_input(
-        "Number of criteria",
-        min_value=2,
-        max_value=10,
-        value=4,
-        step=1
-    )
-
-    criteria = []
-    weights = []
-    score_A = []
-    score_B = []
-
-    st.divider()
-    st.markdown("### Criteria definition & scoring")
+    # Table-like Header
+    h1, h2, h3, h4 = st.columns([3, 1, 1, 1])
+    h1.markdown("**Criterion**")
+    h2.markdown("**Weight**")
+    h3.markdown(f"**{strategy_A}**")
+    h4.markdown(f"**{strategy_B}**")
 
     for i in range(num_criteria):
-        with st.container():
-            st.markdown(f"**Criterion {i+1}**")
-
-            c1, c2, c3, c4 = st.columns([3, 2, 2, 2])
-
-            with c1:
-                crit = st.text_input(
-                    f"Criterion name {i+1}",
-                    value=f"Criterion {i+1}",
-                    key=f"crit_{i}"
-                )
-
-            with c2:
-                weight = st.number_input(
-                    "Importance weight",
-                    min_value=0.0,
-                    max_value=10.0,
-                    value=1.0,
-                    step=0.5,
-                    key=f"weight_{i}",
-                    help="Relative importance of this criterion (managerial judgment)"
-                )
-
-            with c3:
-                a_score = st.number_input(
-                    f"{strategy_A} attractiveness",
-                    min_value=1,
-                    max_value=4,
-                    value=2,
-                    step=1,
-                    key=f"A_{i}",
-                    help="1 = poor, 4 = very attractive"
-                )
-
-            with c4:
-                b_score = st.number_input(
-                    f"{strategy_B} attractiveness",
-                    min_value=1,
-                    max_value=4,
-                    value=2,
-                    step=1,
-                    key=f"B_{i}",
-                    help="1 = poor, 4 = very attractive"
-                )
-
-            criteria.append(crit)
-            weights.append(weight)
-            score_A.append(a_score)
-            score_B.append(b_score)
+        c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
+        with c1:
+            crit = st.text_input(f"c_n_{i}", value=f"Factor {i+1}", label_visibility="collapsed")
+        with c2:
+            w = st.number_input(f"w_{i}", min_value=0.0, max_value=10.0, value=1.0, step=0.5, label_visibility="collapsed")
+        with c3:
+            s_a = st.number_input(f"sa_{i}", min_value=1, max_value=4, value=2, label_visibility="collapsed")
+        with c4:
+            s_b = st.number_input(f"sb_{i}", min_value=1, max_value=4, value=2, label_visibility="collapsed")
+        
+        criteria.append(crit)
+        weights.append(w)
+        score_A.append(s_a)
+        score_B.append(s_b)
 
     # -------------------------------------------------
-    # NORMALIZATION & CALCULATION
+    # CALCULATIONS
     # -------------------------------------------------
-
     norm_weights = normalize_weights(weights)
-
     weighted_A = [norm_weights[i] * score_A[i] for i in range(num_criteria)]
     weighted_B = [norm_weights[i] * score_B[i] for i in range(num_criteria)]
-
     total_A = sum(weighted_A)
     total_B = sum(weighted_B)
 
     # -------------------------------------------------
-    # RESULTS TABLE
+    # RESULTS & VISUALS
     # -------------------------------------------------
-
     st.divider()
-    st.subheader("2️⃣ QSPM Results")
+    st.subheader("2️⃣ Analytical Comparison")
 
-    df = pd.DataFrame({
-        "Criterion": criteria,
-        "Weight (normalized)": norm_weights,
-        f"{strategy_A} score": score_A,
-        f"{strategy_A} weighted": weighted_A,
-        f"{strategy_B} score": score_B,
-        f"{strategy_B} weighted": weighted_B,
-    })
+    col_m1, col_m2 = st.columns(2)
+    col_m1.metric(f"Score: {strategy_A}", f"{total_A:.2f}")
+    col_m2.metric(f"Score: {strategy_B}", f"{total_B:.2f}", 
+                  delta=f"{total_B - total_A:.2f}" if total_B != total_A else None)
 
-    st.dataframe(
-        df.style.format({
-            "Weight (normalized)": "{:.2f}",
-            f"{strategy_A} weighted": "{:.2f}",
-            f"{strategy_B} weighted": "{:.2f}",
-        }),
-        use_container_width=True
-    )
-
-    # -------------------------------------------------
-    # TOTAL SCORES
-    # -------------------------------------------------
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.metric(f"Total Attractiveness – {strategy_A}", f"{total_A:.2f}")
-    with c2:
-        st.metric(f"Total Attractiveness – {strategy_B}", f"{total_B:.2f}")
+    # Comparison Plot
+    fig, ax = plt.subplots(figsize=(10, 5))
+    x = np.arange(len(criteria))
+    width = 0.35
+    
+    ax.bar(x - width/2, weighted_A, width, label=strategy_A, color='#1f77b4')
+    ax.bar(x + width/2, weighted_B, width, label=strategy_B, color='#ff7f0e')
+    
+    ax.set_ylabel('Weighted Attractiveness')
+    ax.set_title('Contribution per Criterion')
+    ax.set_xticks(x)
+    ax.set_xticklabels(criteria, rotation=45, ha='right')
+    ax.legend()
+    st.pyplot(fig)
 
     # -------------------------------------------------
     # INTERPRETATION
     # -------------------------------------------------
-
     st.divider()
-    st.subheader("3️⃣ Interpretation")
+    st.subheader("3️⃣ Strategic Verdict")
 
-    if total_A > total_B:
-        st.success(
-            f"Based on **your assumptions**, **{strategy_A}** "
-            f"is more consistent with the selected criteria."
-        )
-    elif total_B > total_A:
-        st.success(
-            f"Based on **your assumptions**, **{strategy_B}** "
-            f"is more consistent with the selected criteria."
-        )
+    if abs(total_A - total_B) < 0.1:
+        st.info("⚖️ **Indifference Point:** Both strategies are almost equally attractive. Re-evaluate the weights of the most critical factors.")
+    elif total_A > total_B:
+        st.success(f"🏆 **Dominant Path:** {strategy_A} appears more aligned with your strategic priorities.")
     else:
-        st.info(
-            "Both strategies appear **equally attractive** "
-            "under the current assumptions."
-        )
+        st.success(f"🏆 **Dominant Path:** {strategy_B} appears more aligned with your strategic priorities.")
 
-    st.markdown("""
-    🔎 **Important reminder**
+    with st.expander("View Full QSPM Data Table"):
+        df = pd.DataFrame({
+            "Criterion": criteria,
+            "Raw Weight": weights,
+            "Normalized Weight": norm_weights,
+            f"{strategy_A} Score": score_A,
+            f"{strategy_A} Weighted": weighted_A,
+            f"{strategy_B} Score": score_B,
+            f"{strategy_B} Weighted": weighted_B,
+        })
+        st.dataframe(df.style.format({
+            "Normalized Weight": "{:.2f}",
+            f"{strategy_A} Weighted": "{:.2f}",
+            f"{strategy_B} Weighted": "{:.2f}",
+        }))
 
-    If the result feels uncomfortable, ask:
-    - Are the **criteria** correct?
-    - Are the **weights** realistic?
-    - Are the **scores honest**?
-
-    👉 The decision remains **yours**.  
-    The QSPM simply makes your reasoning explicit.
-    """)
+if __name__ == "__main__":
+    show_qspm_tool()
