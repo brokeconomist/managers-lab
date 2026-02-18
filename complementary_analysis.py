@@ -1,175 +1,137 @@
 import streamlit as st
+import pandas as pd
 
-# =========================
-# Helper functions
-# =========================
+# -----------------------
+# Utilities
+# -----------------------
 
 def parse_number(number_str):
     try:
-        return float(number_str.replace(",", ""))
+        return float(str(number_str).replace(",", ""))
     except:
-        return None
-
-
-def format_number(number, decimals=2):
-    return f"{number:,.{decimals}f}"
-
+        return 0.0
 
 def format_percentage(number, decimals=2):
     return f"{number:.{decimals}f}%"
 
-
-# =========================
-# Core calculation (Excel-equivalent)
-# =========================
+# -----------------------
+# Core Calculation
+# -----------------------
 
 def calculate_required_sales_increase(
-    suit_price,
-    price_decrease_pct,   # negative number e.g. -0.10
-    profit_suit,
-    profit_shirt,
-    profit_tie,
-    profit_belt,
-    profit_shoes,
-    percent_shirt,
-    percent_tie,
-    percent_belt,
-    percent_shoes
+    suit_price, price_decrease_pct, profit_suit,
+    profit_shirt, profit_tie, profit_belt, profit_shoes,
+    p_shirt, p_tie, p_belt, p_shoes
 ):
-    """
-    Excel-equivalent formula:
-    = -discount / ( (total_profit_per_suit / price) + discount )
-    """
-
+    # Expected profit from complements per main unit sold
     expected_complement_profit = (
-        percent_shirt * profit_shirt +
-        percent_tie * profit_tie +
-        percent_belt * profit_belt +
-        percent_shoes * profit_shoes
+        p_shirt * profit_shirt +
+        p_tie * profit_tie +
+        p_belt * profit_belt +
+        p_shoes * profit_shoes
     )
 
-    total_profit_per_suit = profit_suit + expected_complement_profit
+    total_profit_per_main_unit = profit_suit + expected_complement_profit
 
     try:
+        # Indifference point formula for total profit maintenance
         required_increase = -price_decrease_pct / (
-            (total_profit_per_suit / suit_price) + price_decrease_pct
+            (total_profit_per_main_unit / suit_price) + price_decrease_pct
         )
         return required_increase * 100
     except ZeroDivisionError:
         return None
 
-
-# =========================
-# Streamlit UI
-# =========================
+# -----------------------
+# UI Logic
+# -----------------------
 
 def show_complementary_analysis():
+    st.header("🧥 Complementary Products & Cross-Sell Analysis")
+    st.write("Evaluate the required volume growth to offset price cuts, accounting for secondary profit streams.")
 
-    st.header("🧥 Complementary Products Analysis")
-    st.markdown("""
-This tool estimates **how much suit sales must increase**
-after a **price reduction**, considering that customers
-also buy **complementary products**.
+    # SIDEBAR: All Financial Inputs
+    with st.sidebar:
+        st.subheader("Core Product (Main)")
+        s_price = st.text_input("Main Unit Price (€)", "200.00")
+        s_profit = st.text_input("Main Unit Profit (€)", "60.00")
+        s_discount = st.slider("Proposed Discount (%)", 0.0, 40.0, 10.0) / 100
 
-Typical use cases:
-- Pricing decisions
-- Promotion planning
-- Profit protection analysis
-""")
+        st.divider()
+        st.subheader("Complementary Profits (€)")
+        prof_shirt = st.number_input("Profit: Shirt", value=13.0)
+        prof_tie = st.number_input("Profit: Tie", value=11.0)
+        prof_belt = st.number_input("Profit: Belt", value=11.0)
+        prof_shoes = st.number_input("Profit: Shoes", value=45.0)
 
-    with st.form("complementary_form"):
-        st.subheader("🔢 Core Product (Suit)")
+        st.divider()
+        st.subheader("Attach Rates (Probabilities)")
+        prob_shirt = st.slider("Shirt Attach Rate (%)", 0, 100, 90) / 100
+        prob_tie = st.slider("Tie Attach Rate (%)", 0, 100, 70) / 100
+        prob_belt = st.slider("Belt Attach Rate (%)", 0, 100, 10) / 100
+        prob_shoes = st.slider("Shoes Attach Rate (%)", 0, 100, 5) / 100
 
-        col1, col2 = st.columns(2)
+        run = st.button("Run Impact Analysis")
 
-        with col1:
-            suit_price_input = st.text_input(
-                "Suit Price (€)",
-                value=format_number(200)
-            )
-            profit_suit_input = st.text_input(
-                "Profit per Suit (€)",
-                value=format_number(60)
-            )
-            price_decrease_input = st.text_input(
-                "Price Decrease (%)",
-                value=format_number(10)
-            )
-
-        st.subheader("👔 Complementary Products – Profit per Unit")
-
-        col3, col4 = st.columns(2)
-
-        with col3:
-            profit_shirt_input = st.text_input("Shirt (€)", value=format_number(13))
-            profit_tie_input = st.text_input("Tie (€)", value=format_number(11))
-
-        with col4:
-            profit_belt_input = st.text_input("Belt (€)", value=format_number(11))
-            profit_shoes_input = st.text_input("Shoes (€)", value=format_number(45))
-
-        st.subheader("📊 Customer Purchasing Probabilities")
-
-        percent_shirt = st.slider("Customers buying Shirt (%)", 0.0, 100.0, 90.0) / 100
-        percent_tie = st.slider("Customers buying Tie (%)", 0.0, 100.0, 70.0) / 100
-        percent_belt = st.slider("Customers buying Belt (%)", 0.0, 100.0, 10.0) / 100
-        percent_shoes = st.slider("Customers buying Shoes (%)", 0.0, 100.0, 5.0) / 100
-
-        submitted = st.form_submit_button("📈 Calculate")
-
-
-    if submitted:
-        suit_price = parse_number(suit_price_input)
-        profit_suit = parse_number(profit_suit_input)
-        price_decrease_pct = -abs(parse_number(price_decrease_input) / 100)
-
-        profit_shirt = parse_number(profit_shirt_input)
-        profit_tie = parse_number(profit_tie_input)
-        profit_belt = parse_number(profit_belt_input)
-        profit_shoes = parse_number(profit_shoes_input)
-
-        if None in (
-            suit_price, profit_suit, price_decrease_pct,
-            profit_shirt, profit_tie, profit_belt, profit_shoes
-        ):
-            st.error("❌ Please check all numeric inputs.")
-            return
+    # MAIN SCREEN: Results
+    if run:
+        # Data Parsing
+        price = parse_number(s_price)
+        profit_base = parse_number(s_profit)
+        discount = -abs(s_discount)
 
         result = calculate_required_sales_increase(
-            suit_price,
-            price_decrease_pct,
-            profit_suit,
-            profit_shirt,
-            profit_tie,
-            profit_belt,
-            profit_shoes,
-            percent_shirt,
-            percent_tie,
-            percent_belt,
-            percent_shoes
+            price, discount, profit_base,
+            prof_shirt, prof_tie, prof_belt, prof_shoes,
+            prob_shirt, prob_tie, prob_belt, prob_shoes
         )
 
-        if result is None:
-            st.error("❌ Calculation not possible with these inputs.")
+        if result is None or result < 0:
+            st.error("🔴 Strategic Deficit: The proposed discount collapses the margin beyond recovery.")
+            return
+
+        # 1. Executive Metrics
+        st.subheader("📊 Strategic Indifference Point")
+        c1, c2, c3 = st.columns(3)
+        
+        expected_cross_sell = (prob_shirt * prof_shirt + prob_tie * prof_tie + 
+                               prob_belt * prof_belt + prob_shoes * prof_shoes)
+        
+        c1.metric("Required Volume Growth", format_percentage(result))
+        c2.metric("Avg. Cross-Sell Profit", f"€{expected_cross_sell:.2f}")
+        c3.metric("Total Margin / Bundle", f"€{(profit_base + expected_cross_sell):.2f}")
+
+        # 2. Impact Table
+        st.divider()
+        st.subheader("📈 Scenario Breakdown")
+        
+        impact_df = pd.DataFrame({
+            "Component": ["Base Product Margin", "Expected Cross-Sell Contribution", "Effective Bundle Margin", "Post-Discount Margin"],
+            "Value (€)": [
+                f"€{profit_base:,.2f}",
+                f"€{expected_cross_sell:,.2f}",
+                f"€{(profit_base + expected_cross_sell):,.2f}",
+                f"€{(profit_base + expected_cross_sell + (price * discount)):,.2f}"
+            ]
+        })
+        st.table(impact_df)
+
+        # 3. Visual Context
+        st.divider()
+        st.subheader("💡 Strategic Assessment")
+        
+        
+        
+        if result > 30:
+            st.warning(f"⚠️ HIGH SENSITIVITY: A volume increase of {result:.1f}% is required. Verify if the market can absorb this growth.")
         else:
-            st.subheader("📉 Result")
-            st.metric(
-                "Required Suit Sales Increase",
-                format_percentage(result)
-            )
+            st.success(f"🟢 MANAGEABLE: The cross-sell profit buffers the discount. Growth required: {result:.1f}%.")
 
-            st.markdown("""
-### 📘 Interpretation
+        st.info("""
+        **Analytical Logic:** This tool uses 'Indifference Analysis'. It calculates the exact volume increase needed so that the 
+        gain from new sales (including complements) exactly offsets the loss from the price reduction 
+        on existing volume.
+        """)
 
-Each suit sale generates:
-- Profit from the suit itself
-- **Expected profit** from complementary products
-
-A price reduction reduces **profit per suit**.
-To maintain **total profit**, sales volume must increase.
-
-This result shows the **minimum increase in suit sales**
-required to offset the discount.
-""")
-
-            st.caption("Calculation follows marginal profit logic (Excel-equivalent).")
+if __name__ == "__main__":
+    show_complementary_analysis()
