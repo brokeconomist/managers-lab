@@ -14,19 +14,16 @@ def parse_number(x):
         return 0.0
 
 def calculate_max_drop(old_price, price_inc_pct, profit_A, profit_B, profit_C, profit_D, pB, pC, pD):
-    # Weighted profit from customers who switch
     weighted_sub_profit = (pB * profit_B + pC * profit_C + pD * profit_D)
-    
     numerator = -price_inc_pct
-    # Structural formula for indifference point in profit
     denominator = ((profit_A - weighted_sub_profit) / old_price) + price_inc_pct
-    
     if denominator == 0:
         return 0.0
     return (numerator / denominator) * 100
 
 def required_sales_increase(price_red_pct, contribution_margin):
-    if contribution_margin <= 0: return 0.0
+    if contribution_margin <= 0:
+        return 0.0
     return (price_red_pct / contribution_margin) * 100
 
 # -------------------------------
@@ -38,9 +35,9 @@ def plot_sensitivity(base_value, scenarios):
     impacts = [base_value * factor - base_value for factor in scenarios.values()]
     
     fig, ax = plt.subplots(figsize=(10, 5))
-    colors = ['#2ca02c' if x < 0 else '#d62728' for x in impacts]
+    colors = ['#2ca02c' if x <= 0 else '#d62728' for x in impacts]
     ax.barh(labels, impacts, color=colors, alpha=0.8)
-    ax.axvline(0, color='white', linewidth=1)
+    ax.axvline(0, linewidth=1)
     ax.set_title("Sensitivity Analysis: Impact on Required Growth", fontsize=14, fontweight='bold')
     ax.set_xlabel("Percentage Point Shift (%)")
     ax.grid(True, linestyle=':', alpha=0.4)
@@ -54,7 +51,9 @@ def show_substitutes_sensitivity_tool():
     st.header("🔁 Strategic Substitution & Elasticity Analysis")
     st.write("Analyze structural risks from price movements and competitor substitution.")
 
-    # SIDEBAR: All Inputs
+    # -------------------------------
+    # SIDEBAR INPUTS
+    # -------------------------------
     with st.sidebar:
         mode = st.radio("Strategic Action:", ["Price Increase (Drop Limit)", "Price Reduction (Growth Required)"])
         
@@ -89,54 +88,111 @@ def show_substitutes_sensitivity_tool():
 
         run = st.button("Execute Analysis")
 
-    # MAIN SCREEN: Results
+    # -------------------------------
+    # MAIN RESULTS
+    # -------------------------------
     if run:
         st.divider()
         
+        # =====================================
+        # PRICE INCREASE MODE
+        # =====================================
         if mode == "Price Increase (Drop Limit)":
+            
             total_switch = pct_B + pct_C + pct_D
             if total_switch > 1.0:
                 st.error("Total switching cannot exceed 100%. Adjust sliders.")
-            else:
-                max_drop = calculate_max_drop(parse_number(old_p), p_inc, parse_number(p_A), p_B, p_C, p_D, pct_B, pct_C, pct_D)
-                
-                # Executive Metrics
-                c1, c2 = st.columns(2)
-                c1.metric("Max Acceptable Sales Drop", f"{max_drop:.2f}%")
-                c2.metric("System Leakage (No Purchase)", f"{(1-total_switch)*100:.1f}%")
-                
-                st.info(f"**Strategic Boundary:** You can lose up to **{abs(max_drop):.2f}%** of Product A sales. Beyond this point, the profits gained from the price increase and substitutions fail to cover the volume loss.")
-                
-                
+                return
 
+            max_drop = calculate_max_drop(
+                parse_number(old_p),
+                p_inc,
+                parse_number(p_A),
+                p_B, p_C, p_D,
+                pct_B, pct_C, pct_D
+            )
+
+            leakage = (1 - total_switch) * 100
+
+            c1, c2 = st.columns(2)
+            c1.metric("Max Acceptable Sales Drop", f"{max_drop:.2f}%")
+            c2.metric("System Leakage (No Purchase)", f"{leakage:.1f}%")
+
+            # ---------------- Strategic Verdict ----------------
+            st.divider()
+            st.subheader("🧠 Strategic Verdict")
+
+            if abs(max_drop) < 5:
+                st.error("High Fragility: Even small volume losses destroy pricing gains.")
+            elif abs(max_drop) < 15:
+                st.warning("Moderate Risk: Price increase is viable but sensitive to switching.")
+            else:
+                st.success("Pricing Power Detected: Business can tolerate meaningful volume loss.")
+
+            # Break-even switching insight
+            st.write(
+                f"Strategic Boundary: Beyond {abs(max_drop):.2f}% volume loss, "
+                "the price increase no longer compensates structural substitution."
+            )
+
+        # =====================================
+        # PRICE REDUCTION MODE
+        # =====================================
         else:
             base_req = required_sales_increase(p_red, c_margin)
             
             st.subheader("📊 Required Growth Scenarios")
             
-            scenarios = {"Low Substitution": s_low, "Base Case": 1.0, "High Substitution": s_high}
+            scenarios = {
+                "Low Substitution": s_low,
+                "Base Case": 1.0,
+                "High Substitution": s_high
+            }
             
             results_data = []
             for name, factor in scenarios.items():
                 adj = base_req * factor
                 status = "✅ Feasible" if adj <= max_cap else "❌ Infeasible"
-                results_data.append({"Scenario": name, "Req. Growth": f"{adj:.2f}%", "Status": status})
+                results_data.append({
+                    "Scenario": name,
+                    "Required Growth (%)": f"{adj:.2f}",
+                    "Status": status
+                })
             
-            st.table(pd.DataFrame(results_data))
+            results_df = pd.DataFrame(results_data)
+            st.table(results_df)
             
-            # Visualization
+            # Sensitivity Chart
             st.subheader("📈 Sensitivity Analysis")
             fig = plot_sensitivity(base_req, scenarios)
             st.pyplot(fig)
-            
-            
 
+            # ---------------- Strategic Assessment ----------------
             st.divider()
-            st.subheader("🧠 Analytical Assessment")
-            if base_req > max_cap:
-                st.error(f"Structural Deficit: Mechanical growth requirement ({base_req:.1f}%) exceeds your market capacity ({max_cap}%).")
-            else:
-                st.success(f"Structural Buffer: Model requires {base_req:.1f}% growth vs your {max_cap}% limit.")
+            st.subheader("🧠 Executive Assessment")
 
+            if base_req > max_cap:
+                st.error(
+                    f"Structural Deficit: Required growth ({base_req:.1f}%) "
+                    f"exceeds market capacity ({max_cap}%)."
+                )
+            else:
+                st.success(
+                    f"Structural Buffer: Required growth ({base_req:.1f}%) "
+                    f"is within capacity constraint ({max_cap}%)."
+                )
+
+            # Strategic Signal
+            st.divider()
+            st.subheader("📌 Strategic Signal")
+
+            if base_req <= max_cap:
+                st.success("Recommendation: Price reduction is economically supportable.")
+            else:
+                st.warning("Recommendation: Avoid aggressive price cuts without demand expansion capability.")
+
+# -------------------------------
+# Run App
+# -------------------------------
 if __name__ == "__main__":
     show_substitutes_sensitivity_tool()
