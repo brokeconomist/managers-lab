@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # -----------------------------------------
 # LOGIC
@@ -8,7 +9,6 @@ def calculate_weighted_average(amounts, credit_days):
     total_amount = sum(amounts)
     if total_amount == 0:
         return 0, 0.0
-
     weighted_sum = sum(a * d for a, d in zip(amounts, credit_days))
     weighted_avg = weighted_sum / total_amount
     return total_amount, weighted_avg
@@ -17,28 +17,18 @@ def calculate_weighted_average(amounts, credit_days):
 # UI
 # -----------------------------------------
 def show_credit_days_calculator():
-    st.header("📅 Weighted Average Credit Days")
-    st.caption("Strategic assessment of receivables based on exposure volume, not just customer count.")
+    st.header("📅 Weighted Average Credit Days & Pareto Analysis")
+    st.caption("Strategic assessment of receivables volume and collection concentration.")
 
-    # SIDEBAR: Control the number of categories
     with st.sidebar:
         st.subheader("Configuration")
-        num_categories = st.number_input(
-            "Number of customer categories",
-            min_value=1, max_value=15, value=4
-        )
+        num_categories = st.number_input("Number of customer categories", min_value=1, max_value=15, value=5)
         st.divider()
-        st.info("The weighted average provides a more accurate picture of liquidity risk than a simple average.")
+        st.info("Pareto Analysis (80/20) helps identify which key accounts dominate your credit exposure.")
 
-    # INPUT AREA
     st.subheader("📥 Input Data")
-    
-    names = []
-    customers = []
-    amounts = []
-    credit_days = []
+    names, customers, amounts, credit_days = [], [], [], []
 
-    # Header Row
     h1, h2, h3, h4 = st.columns([2, 1, 2, 1])
     h1.markdown("**Category Name**")
     h2.markdown("**Cust. #**")
@@ -47,62 +37,72 @@ def show_credit_days_calculator():
 
     for i in range(num_categories):
         c1, c2, c3, c4 = st.columns([2, 1, 2, 1])
-        
         names.append(c1.text_input(f"n_{i}", value=f"Segment {i+1}", label_visibility="collapsed"))
         customers.append(c2.number_input(f"c_{i}", min_value=0, step=1, label_visibility="collapsed"))
         amounts.append(c3.number_input(f"a_{i}", min_value=0.0, step=1000.0, label_visibility="collapsed"))
         credit_days.append(c4.number_input(f"d_{i}", min_value=0, step=1, label_visibility="collapsed"))
 
-    st.divider()
-
-    if st.button("📊 Calculate Weighted Metrics", type="primary"):
+    if st.button("📊 Run Analytical Engine", type="primary"):
         total_amount, weighted_avg = calculate_weighted_average(amounts, credit_days)
 
         if total_amount == 0:
-            st.error("⚠️ Please enter at least one amount to perform the calculation.")
+            st.error("⚠️ Enter values to generate analysis.")
             return
 
-        # RESULTS
-        st.subheader("📈 Financial Results")
-        m1, m2, m3 = st.columns(3)
-
+        # 1. CORE METRICS
+        st.divider()
+        m1, m2 = st.columns(2)
         m1.metric("Total Receivables", f"€ {total_amount:,.0f}".replace(",", "."))
         m2.metric("Weighted Avg. Days", f"{weighted_avg:.1f} Days")
-        
-        # Simple average for comparison
-        active_segments = [d for a, d in zip(amounts, credit_days) if a > 0]
-        simple_avg = sum(active_segments) / len(active_segments) if active_segments else 0
-        m3.metric("Simple Average", f"{simple_avg:.1f} Days", delta=f"{weighted_avg - simple_avg:.1f} Bias")
 
-        
+        # 2. PARETO DATA PREPARATION
+        df = pd.DataFrame({
+            "Category": names,
+            "Amount": amounts,
+            "Days": credit_days
+        }).sort_values(by="Amount", ascending=False)
 
-        # ANALYTICAL TABLE
-        st.subheader("📋 Exposure Analysis")
-        
-        data = []
-        for n, c, a, d in zip(names, customers, amounts, credit_days):
-            if a > 0:
-                weight = (a / total_amount) * 100
-                data.append({
-                    "Category": n,
-                    "Customers": c,
-                    "Amount (€)": a,
-                    "Credit Days": d,
-                    "Weight (%)": f"{weight:.1f}%"
-                })
-        
-        df = pd.DataFrame(data)
-        st.table(df)
+        df["Weight %"] = (df["Amount"] / total_amount) * 100
+        df["Cumulative %"] = df["Weight %"].cumsum()
 
-        # Managerial Insight
+        # 3. PARETO CHART
+        st.subheader("📈 Pareto Exposure Chart")
+        st.caption("Identify the 'Vital Few' segments that constitute the majority of your debt.")
+        
+        
+        
+        fig, ax1 = plt.subplots(figsize=(10, 5))
+        # Bar chart
+        ax1.bar(df["Category"], df["Amount"], color="#1f77b4", label="Debt Amount")
+        ax1.set_ylabel("Debt Amount (€)")
+        
+        # Cumulative line
+        ax2 = ax1.twinx()
+        ax2.plot(df["Category"], df["Cumulative %"], color="#d62728", marker="D", ms=7, label="Cumulative %")
+        ax2.axhline(y=80, color='gray', linestyle='--') # 80% threshold
+        ax2.set_ylabel("Cumulative Percentage (%)")
+        ax2.set_ylim(0, 110)
+
+        plt.title("Receivables Concentration (Pareto)")
+        st.pyplot(fig)
+
+        # 4. PARETO TABLE
+        st.subheader("📋 Concentration Table")
+        st.table(df.style.format({"Amount": "{:,.0f} €", "Weight %": "{:.1f}%", "Cumulative %": "{:.1f}%"}))
+
+        # 5. MANAGERIAL VERDICT
         st.divider()
-        st.markdown("### 🧠 Strategic Observation")
-        highest_debt_idx = amounts.index(max(amounts))
+        key_segments = df[df["Cumulative %"] <= 85]["Category"].tolist()
         
-        if credit_days[highest_debt_idx] > weighted_avg:
-            st.warning(f"**Concentration Risk:** Your largest exposure (**{names[highest_debt_idx]}**) has credit terms longer than your weighted average. This significantly delays your cash inflows.")
+        st.markdown("### 🧠 Strategic Verdict")
+        st.write(f"The following segments constitute **over 80%** of your total exposure: **{', '.join(key_segments)}**.")
+        
+        # Checking if high-volume customers pay late
+        avg_days_top = df[df["Cumulative %"] <= 85]["Days"].mean()
+        if avg_days_top > weighted_avg:
+            st.error(f"⚠️ **High-Risk Concentration:** Your core debtors (top 80%) have a collection period ({avg_days_top:.1f} days) higher than the average. Your liquidity is overly dependent on these specific accounts.")
         else:
-            st.success(f"**Liquidity Control:** Your highest value segments are paying faster than the average, which is positive for cash flow stability.")
+            st.success("✅ **Balanced Risk:** Your primary debtors have collection terms that align with or are faster than your average.")
 
 if __name__ == "__main__":
     show_credit_days_calculator()
