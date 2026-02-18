@@ -1,83 +1,121 @@
 import streamlit as st
+import pandas as pd
 
-# --- Helper functions for English number formatting ---
+# -----------------------
+# Utilities
+# -----------------------
+
 def parse_number(number_str):
-    """Convert string with English decimal separator to float."""
     try:
-        return float(number_str.replace(',', ''))
+        return float(str(number_str).replace(',', ''))
     except:
         return None
-
-def format_number(number, decimals=2):
-    return f"{number:,.{decimals}f}"
 
 def format_percentage(number, decimals=1):
     return f"{number:.{decimals}f}%"
 
-# --- Calculation ---
-def calculate_sales_loss_threshold(
-    competitor_old_price,
-    competitor_new_price,
-    our_price,
-    unit_cost
-):
+# -----------------------
+# Calculation Logic
+# -----------------------
+
+def calculate_sales_loss_threshold(comp_old, comp_new, our_price, unit_cost):
     try:
-        top = (competitor_new_price - competitor_old_price) / competitor_old_price
-        bottom = (unit_cost - our_price) / our_price
-        if bottom == 0:
+        # Price change ratio of competitor
+        comp_price_change = (comp_new - comp_old) / comp_old
+        # Our contribution margin ratio
+        our_margin_ratio = (unit_cost - our_price) / our_price
+        
+        if our_margin_ratio == 0:
             return None
-        result = top / bottom
-        return result * 100  # return as percentage
+            
+        # The threshold: How much volume loss equals the profit loss of a price match
+        result = comp_price_change / our_margin_ratio
+        return result * 100 
     except ZeroDivisionError:
         return None
 
-# --- Streamlit UI ---
+# -----------------------
+# Main UI
+# -----------------------
+
 def show_loss_threshold_before_price_cut():
-    st.header("📉 Sales Loss Threshold Before Price Reduction")
-    st.title("How much sales can you lose before considering a price cut? ⚖️")
+    st.header("📉 Sales Loss Threshold Analysis")
+    st.write("Determine the structural limit of volume loss before a defensive price reduction becomes mathematically necessary.")
 
-    st.markdown("""
-    🧠 Competitors reduced their prices — should you follow?
+    # SIDEBAR: Strategic Inputs
+    with st.sidebar:
+        st.subheader("Competitor Action")
+        c_old = st.text_input("Competitor's Original Price (€)", "8.00")
+        c_new = st.text_input("Competitor's New Price (€)", "7.20")
+        
+        st.divider()
+        st.subheader("Internal Economics")
+        u_price = st.text_input("Our Current Price (€)", "8.00")
+        u_cost = st.text_input("Unit Variable Cost (€)", "4.50")
+        
+        st.divider()
+        run = st.button("Calculate Resilience Threshold")
 
-    👉 This tool shows **how much percentage of sales you can afford to lose**
-    before you need to lower your price to stay competitive.
-    """)
+    # MAIN SCREEN: Analytical Results
+    if run:
+        # Data Parsing
+        comp_old = parse_number(c_old)
+        comp_new = parse_number(c_new)
+        our_price = parse_number(u_price)
+        unit_cost = parse_number(u_cost)
 
-    with st.form("loss_threshold_form"):
-        col1, col2 = st.columns(2)
-
-        with col1:
-            competitor_old_price_input = st.text_input("Competitor's Original Price (€)", value=format_number(8.0))
-            our_price_input = st.text_input("Our Product Price (€)", value=format_number(8.0))
-
-        with col2:
-            competitor_new_price_input = st.text_input("Competitor's New Price (€)", value=format_number(7.2))
-            unit_cost_input = st.text_input("Unit Cost (€)", value=format_number(4.5))
-
-        submitted = st.form_submit_button("Calculate")
-
-    if submitted:
-        competitor_old_price = parse_number(competitor_old_price_input)
-        competitor_new_price = parse_number(competitor_new_price_input)
-        our_price = parse_number(our_price_input)
-        unit_cost = parse_number(unit_cost_input)
-
-        if None in (competitor_old_price, competitor_new_price, our_price, unit_cost):
-            st.error("⚠️ Please check that all numeric fields are correctly filled.")
+        if None in (comp_old, comp_new, our_price, unit_cost):
+            st.error("⚠️ Strategic Error: Incomplete financial data. Please check sidebar inputs.")
             return
 
-        result = calculate_sales_loss_threshold(
-            competitor_old_price,
-            competitor_new_price,
-            our_price,
-            unit_cost
-        )
+        threshold = calculate_sales_loss_threshold(comp_old, comp_new, our_price, unit_cost)
+        comp_drop_pct = ((comp_new - comp_old) / comp_old) * 100
+        our_margin = our_price - unit_cost
 
-        if result is None:
-            st.error("⚠️ Cannot calculate. Check the input values.")
-        elif result <= 0:
-            st.warning("❗ No sales loss margin. Your price is already less competitive.")
+        st.subheader("📊 Executive Summary")
+        
+        if threshold is None:
+            st.error("⚠️ Calculation collapsed. Check for zero margins.")
+        elif threshold <= 0:
+            st.warning("❗ No Buffer: Your current margin structure cannot absorb this competitor move.")
         else:
-            st.success(f"✅ Maximum % of sales that can be lost before a price cut: {format_percentage(result)}")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Max Volume Loss Allowed", format_percentage(threshold))
+            c2.metric("Competitor Price Cut", f"{comp_drop_pct:.1f}%")
+            c3.metric("Current Unit Margin", f"€{our_margin:.2f}")
 
-    st.markdown("---")
+            # 1. Strategic Interpretation
+            st.divider()
+            st.subheader("🧠 Strategic Interpretation")
+            
+            
+            
+            st.info(f"""
+            **The Cold Reality:** A price match will drop your profit on *every* unit sold. 
+            Staying at your current price is more profitable **as long as your sales drop is less than {format_percentage(threshold)}**.
+            
+            If you expect to lose *more* than {format_percentage(threshold)} of your customers to the competitor, only then is a price cut mathematically justified.
+            """)
+
+            # 2. Risk Matrix
+            st.subheader("📋 Decision Framework")
+            
+            decision_data = {
+                "Scenario": ["Actual Loss < Threshold", "Actual Loss = Threshold", "Actual Loss > Threshold"],
+                "Action": ["HOLD PRICE", "INDIFFERENT", "REDUCE PRICE"],
+                "Financial Impact": ["Higher Profit via Margin", "Breakeven Point", "Profit Protection via Volume"]
+            }
+            st.table(pd.DataFrame(decision_data))
+
+            # 3. Visualization of the Margin Buffer
+            st.divider()
+            st.subheader("📉 Structural Resilience Visualization")
+            
+            # Simple Progress bar to show how much "Safety Room" exists
+            st.write(f"Volume Loss Tolerance: {threshold:.1f}%")
+            st.progress(min(threshold / 100, 1.0))
+            
+            st.caption("Note: This model assumes linear demand and no change in variable costs. It measures the 'Indifference Point' between margin erosion and volume erosion.")
+
+if __name__ == "__main__":
+    show_loss_threshold_before_price_cut()
