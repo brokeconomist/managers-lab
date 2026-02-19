@@ -1,55 +1,132 @@
 import streamlit as st
 
-# 1. Αρχικοποίηση του βήματος (αν δεν υπάρχει)
-if 'flow_step' not in st.session_state:
-    st.session_state.flow_step = 0  # 0 σημαίνει Αρχική Σελίδα
+def show_home():
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.title("🔓 Free Tools")
-    st.caption("Για τον κυρ-Βαγγέλη (Quick Checks)")
-    # Εδώ μπορείς να έχεις τα 3 free εργαλεία πάντα διαθέσιμα
-    free_choice = st.radio("Γρήγορη Πρόσβαση:", ["Αρχική", "Κόστος Μονάδας", "Ημέρες Πίστωσης", "Απόθεμα"])
-
-# --- MAIN LOGIC ---
-
-# Αν ο χρήστης επιλέξει κάτι από το sidebar, μηδενίζουμε το Path για να πάει εκεί
-if free_choice != "Αρχική":
-    st.session_state.flow_step = -1 # Ειδική τιμή για ελεύθερη πλοήγηση
-
-# CASE 0: Αρχική Σελίδα (The Hook)
-if st.session_state.flow_step == 0 and free_choice == "Αρχική":
+    # -------------------------------------------------
+    # HEADER
+    # -------------------------------------------------
     st.title("🧪 Managers’ Lab")
+
     st.markdown("""
-    ### Οδηγός Επιβίωσης & Λήψης Αποφάσεων
-    
-    Αυτό δεν είναι ένα απλό κομπιουτεράκι. Είναι μια **διαδρομή απόφασης**.
-    Ο κυρ-Βαγγέλης ξέρει τα νούμερα, αλλά εσύ πρέπει να δείξεις αν η επιχείρηση **αντέχει**.
+A decision laboratory for managers.  
+Not a dashboard. Not a reporting or forecasting tool.  
+
+Managers’ Lab tests what must be true for a decision to work —  
+and what breaks when it doesn’t.  
+
+The tools are already built. Judgment is yours.
     """)
-    
-    # 
 
-    st.info("💡 Η διαδρομή είναι κλειδωμένη: Πρώτα η Επιβίωση, μετά η Στρατηγική.")
+    st.divider()
+    st.markdown("**Choose the type of decision you are trying to make.**")
 
-    if st.button("Ξεκίνα τη Δομημένη Διαδρομή (Survival Engine)", type="primary"):
-        st.session_state.flow_step = 1
-        st.rerun()
+    # -------------------------------------------------
+    # DECISION GROUPS
+    # -------------------------------------------------
 
-# CASE 1: Το πρώτο βήμα της διαδρομής (Survival)
-elif st.session_state.flow_step == 1:
-    st.header("Βήμα 1: Survival Anchor")
-    # Εδώ καλείς τη συνάρτηση από το resilience_app
-    st.write("Εδώ εξετάζουμε αν το σύστημα αντέχει σοκ.")
-    
-    if st.button("Επόμενο Βήμα: Structural Pressure"):
-        st.session_state.flow_step = 2
-        st.rerun()
+    st.subheader("Pricing & Viability")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Break-Even Shift Analysis"):
+            st.session_state.selected_category = "📈 Break-Even & Pricing"
+            st.session_state.selected_tool = "Break-Even Shift Analysis"
+    with col2:
+        if st.button("Loss Threshold Before Price Cut"):
+            st.session_state.selected_category = "📈 Break-Even & Pricing"
+            st.session_state.selected_tool = "Loss Threshold Before Price Cut"
 
-# CASE -1: Ελεύθερα Εργαλεία (Για τον κυρ-Βαγγέλη)
-elif st.session_state.flow_step == -1:
-    if free_choice == "Κόστος Μονάδας":
-        st.subheader("Υπολογισμός Κόστους")
-        # call your function: show_unit_cost_app()
-    elif free_choice == "Ημέρες Πίστωσης":
-        st.subheader("Ποιος μου χρωστάει")
-        # call your function: show_credit_days_calculator()
+    st.subheader("Customer Economics")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("CLV Analysis"):
+            st.session_state.selected_category = "👥 Customer Value"
+            st.session_state.selected_tool = "CLV Analysis"
+    with col2:
+        if st.button("Substitution Analysis"):
+            st.session_state.selected_category = "👥 Customer Value"
+            st.session_state.selected_tool = "Substitution Analysis"
+    with col3:
+        if st.button("Complementary Product Analysis"):
+            st.session_state.selected_category = "👥 Customer Value"
+            st.session_state.selected_tool = "Complementary Product Analysis"
+
+    st.subheader("Cash Flow & Financing")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("Cash Cycle Calculator"):
+            st.session_state.selected_category = "💰 Finance & Cash Flow"
+            st.session_state.selected_tool = "Cash Cycle Calculator"
+    with col2:
+        if st.button("Credit Policy Analysis"):
+            st.session_state.selected_category = "💰 Finance & Cash Flow"
+            st.session_state.selected_tool = "Credit Policy Analysis"
+    with col3:
+        if st.button("Supplier Payment Analysis"):
+            st.session_state.selected_category = "💰 Finance & Cash Flow"
+            st.session_state.selected_tool = "Supplier Payment Analysis"
+
+    st.subheader("Cost Structure & Profitability")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Unit Cost Calculator"):
+            st.session_state.selected_category = "📊 Cost & Profit"
+            st.session_state.selected_tool = "Unit Cost Calculator"
+    with col2:
+        if st.button("Discount NPV Analysis"):
+            st.session_state.selected_category = "📊 Cost & Profit"
+            st.session_state.selected_tool = "Discount NPV Analysis"
+
+    st.subheader("Inventory & Operations")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Inventory Turnover Analysis"):
+            st.session_state.selected_category = "📦 Inventory & Operations"
+            st.session_state.selected_tool = "Inventory Turnover Analysis"
+    with col2:
+        if st.button("Credit Days Calculator"):
+            st.session_state.selected_category = "📦 Inventory & Operations"
+            st.session_state.selected_tool = "Credit Days Calculator"
+
+    st.subheader("Strategy & Decision")
+    if st.button("QSPM – Strategy Comparison"):
+        st.session_state.selected_category = "🧭 Strategy & Decision"
+        st.session_state.selected_tool = "QSPM – Strategy Comparison"
+
+    st.divider()
+
+    # -------------------------------------------------
+    # COFFEE BUTTON (optional support)
+    # -------------------------------------------------
+    #col1, col2, col3 = st.columns([1, 2, 1])
+    #with col2:
+        #st.markdown(
+            #"<div style='text-align: center;'>"
+            #"<a href='https://buymeacoffee.com/USERNAME' target='_blank'>"
+            #"☕ Buy me a coffee"
+            #"</a>"
+            #"</div>",
+            #unsafe_allow_html=True
+        #)
+        #st.caption("For those who find value here.")
+
+    #st.divider()
+
+    # -------------------------------------------------
+    # HOW TO USE (micro-polished)
+    # -------------------------------------------------
+    st.markdown("""
+**How to use the Lab**  
+Open a tool from the sidebar or main menu once the decision frame is clear. Focus on tolerance, not forecasts — small changes compound structurally.
+    """)
+
+    st.divider()
+
+    # -------------------------------------------------
+    # CONTACT
+    # -------------------------------------------------
+    st.markdown("""
+**Contact**  
+For feedback, questions, or collaboration:  
+✉️ manosv18@gmail.com
+    """)
+
