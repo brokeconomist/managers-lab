@@ -1,132 +1,148 @@
 import streamlit as st
 
-def show_home():
+# ----------------------------------------
+# Imports of all tools
+# ----------------------------------------
+from home import show_home
+from start_here import show_start_here
+from break_even_shift_calculator import show_break_even_shift_calculator
+from clv_calculator import show_clv_calculator
+from substitution_analysis_tool import show_substitutes_sensitivity_tool
+from complementary_analysis import show_complementary_analysis
+from loss_threshold import show_loss_threshold_before_price_cut
+from credit_policy_app import show_credit_policy_analysis
+from supplier_credit_app import show_supplier_credit_analysis
+from cash_cycle import run_cash_cycle_app
+from loan_vs_leasing_calculator import loan_vs_leasing_ui
+from unit_cost_app import show_unit_cost_app
+from discount_npv_ui import show_discount_npv_ui
+from credit_days_calculator import show_credit_days_calculator
+from inventory_turnover_calculator import show_inventory_turnover_calculator
+from qspm_two_strategies import show_qspm_tool
+from pricing_power_radar import show_pricing_power_radar
+from cash_fragility_index import show_cash_fragility_index
 
-    # -------------------------------------------------
-    # HEADER
-    # -------------------------------------------------
-    st.title("🧪 Managers’ Lab")
 
-    st.markdown("""
-A decision laboratory for managers.  
-Not a dashboard. Not a reporting or forecasting tool.  
+# ----------------------------------------
+# Page config
+# ----------------------------------------
+st.set_page_config(
+    page_title="Managers’ Lab",
+    page_icon="🧪",
+    layout="centered"
+)
 
-Managers’ Lab tests what must be true for a decision to work —  
-and what breaks when it doesn’t.  
+# ----------------------------------------
+# Tool registry
+# ----------------------------------------
+tool_categories = {
+    "🏠 Home": [
+        ("Home", show_home)
+    ],
 
-The tools are already built. Judgment is yours.
-    """)
+    "💡 Getting Started": [
+        ("Start Here", show_start_here)
+    ],
 
-    st.divider()
-    st.markdown("**Choose the type of decision you are trying to make.**")
+    "📈 Break-Even & Pricing": [
+        ("Break-Even Shift Analysis", show_break_even_shift_calculator),
+        ("Loss Threshold Before Price Cut", show_loss_threshold_before_price_cut),
+        ("Pricing Power Radar", show_pricing_power_radar),  # ✅ ΤΟ ΒΑΛΑΜΕ ΣΩΣΤΑ ΕΔΩ
+    ],
 
-    # -------------------------------------------------
-    # DECISION GROUPS
-    # -------------------------------------------------
+    "👥 Customer Value": [
+        ("CLV Analysis", show_clv_calculator),
+        ("Strategic Substitution Analysis", show_substitutes_sensitivity_tool),
+        ("Complementary Product Analysis", show_complementary_analysis),
+    ],
 
-    st.subheader("Pricing & Viability")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Break-Even Shift Analysis"):
-            st.session_state.selected_category = "📈 Break-Even & Pricing"
-            st.session_state.selected_tool = "Break-Even Shift Analysis"
-    with col2:
-        if st.button("Loss Threshold Before Price Cut"):
-            st.session_state.selected_category = "📈 Break-Even & Pricing"
-            st.session_state.selected_tool = "Loss Threshold Before Price Cut"
+    "💰 Finance & Cash Flow": [
+        ("Cash Cycle Calculator", run_cash_cycle_app),
+        ("Credit Policy Analysis", show_credit_policy_analysis),
+        ("Supplier Payment Analysis", show_supplier_credit_analysis),
+        ("Loan vs Leasing Analysis", loan_vs_leasing_ui),
+        ("Cash Fragility Index", show_cash_fragility_index),
+    ],
 
-    st.subheader("Customer Economics")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("CLV Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "CLV Analysis"
-    with col2:
-        if st.button("Substitution Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "Substitution Analysis"
-    with col3:
-        if st.button("Complementary Product Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "Complementary Product Analysis"
+    "📊 Cost & Profit": [
+        ("Unit Cost Calculator", show_unit_cost_app),
+        ("Discount NPV Analysis", show_discount_npv_ui),
+    ],
 
-    st.subheader("Cash Flow & Financing")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Cash Cycle Calculator"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Cash Cycle Calculator"
-    with col2:
-        if st.button("Credit Policy Analysis"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Credit Policy Analysis"
-    with col3:
-        if st.button("Supplier Payment Analysis"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Supplier Payment Analysis"
+    "📦 Inventory & Operations": [
+        ("Credit Days Calculator", show_credit_days_calculator),
+        ("Inventory Turnover Analysis", show_inventory_turnover_calculator),
+    ],
 
-    st.subheader("Cost Structure & Profitability")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Unit Cost Calculator"):
-            st.session_state.selected_category = "📊 Cost & Profit"
-            st.session_state.selected_tool = "Unit Cost Calculator"
-    with col2:
-        if st.button("Discount NPV Analysis"):
-            st.session_state.selected_category = "📊 Cost & Profit"
-            st.session_state.selected_tool = "Discount NPV Analysis"
+    "🧭 Strategy & Decision": [
+        ("QSPM – Strategy Comparison", show_qspm_tool),
+    ],
+}
 
-    st.subheader("Inventory & Operations")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Inventory Turnover Analysis"):
-            st.session_state.selected_category = "📦 Inventory & Operations"
-            st.session_state.selected_tool = "Inventory Turnover Analysis"
-    with col2:
-        if st.button("Credit Days Calculator"):
-            st.session_state.selected_category = "📦 Inventory & Operations"
-            st.session_state.selected_tool = "Credit Days Calculator"
+# ----------------------------------------
+# Session state initialization
+# ----------------------------------------
+if "selected_category" not in st.session_state:
+    st.session_state.selected_category = "🏠 Home"
 
-    st.subheader("Strategy & Decision")
-    if st.button("QSPM – Strategy Comparison"):
-        st.session_state.selected_category = "🧭 Strategy & Decision"
-        st.session_state.selected_tool = "QSPM – Strategy Comparison"
+if "selected_tool" not in st.session_state:
+    st.session_state.selected_tool = "Home"
 
-    st.divider()
+# ----------------------------------------
+# Sidebar
+# ----------------------------------------
+st.sidebar.title("🧪 Managers’ Lab")
 
-    # -------------------------------------------------
-    # COFFEE BUTTON (optional support)
-    # -------------------------------------------------
-    #col1, col2, col3 = st.columns([1, 2, 1])
-    #with col2:
-        #st.markdown(
-            #"<div style='text-align: center;'>"
-            #"<a href='https://buymeacoffee.com/USERNAME' target='_blank'>"
-            #"☕ Buy me a coffee"
-            #"</a>"
-            #"</div>",
-            #unsafe_allow_html=True
-        #)
-        #st.caption("For those who find value here.")
+category_keys = list(tool_categories.keys())
 
-    #st.divider()
+selected_category = st.sidebar.selectbox(
+    "Select category",
+    category_keys,
+    index=category_keys.index(st.session_state.selected_category)
+)
 
-    # -------------------------------------------------
-    # HOW TO USE (micro-polished)
-    # -------------------------------------------------
-    st.markdown("""
-**How to use the Lab**  
-Open a tool from the sidebar or main menu once the decision frame is clear. Focus on tolerance, not forecasts — small changes compound structurally.
-    """)
+# Reset tool if category changed
+if selected_category != st.session_state.selected_category:
+    st.session_state.selected_category = selected_category
+    st.session_state.selected_tool = tool_categories[selected_category][0][0]
 
-    st.divider()
+tools_in_category = tool_categories[st.session_state.selected_category]
+tool_names = [t[0] for t in tools_in_category]
 
-    # -------------------------------------------------
-    # CONTACT
-    # -------------------------------------------------
-    st.markdown("""
-**Contact**  
-For feedback, questions, or collaboration:  
-✉️ manosv18@gmail.com
-    """)
+selected_tool = st.sidebar.radio(
+    "Choose tool",
+    tool_names,
+    index=tool_names.index(st.session_state.selected_tool)
+)
+
+st.session_state.selected_tool = selected_tool
+
+# ----------------------------------------
+# Back to Home button
+# ----------------------------------------
+if not (
+    st.session_state.selected_category == "🏠 Home"
+    and st.session_state.selected_tool == "Home"
+):
+    if st.sidebar.button("← Back to Lab"):
+        st.session_state.selected_category = "🏠 Home"
+        st.session_state.selected_tool = "Home"
+        st.rerun()
+
+# ----------------------------------------
+# Render selected tool
+# ----------------------------------------
+for name, func in tools_in_category:
+    if name == st.session_state.selected_tool:
+        func()
+        break
+
+# ----------------------------------------
+# Footer
+# ----------------------------------------
+st.divider()
+st.caption(
+    "Managers’ Lab · Decision Laboratory\n"
+    "Exploration is open. Structural integrity is mandatory."
+)
 
