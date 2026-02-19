@@ -1,124 +1,123 @@
 import streamlit as st
 
-# --- Imports των εργαλείων σου ---
-from home import show_home
-from start_here import show_start_here
-from break_even_shift_calculator import show_break_even_shift_calculator
-from unit_cost_app import show_unit_cost_app
-from credit_days_calculator import show_credit_days_calculator
-from inventory_turnover_calculator import show_inventory_turnover_calculator
-from pricing_power_radar import show_pricing_power_radar
-from qspm_two_strategies import show_qspm_tool
-# Φέρε και το νέο Resilience Map που φτιάξαμε
-from financial_resilience_app import show_resilience_map 
+# 1. ΕΙΣΑΓΩΓΗ ΤΩΝ ΕΡΓΑΛΕΙΩΝ (Βεβαιώσου ότι τα ονόματα των αρχείων είναι σωστά)
+# Αν κάποιο αρχείο λείπει, το Streamlit θα βγάλει σφάλμα - απλά κάνε comment τη γραμμή
+try:
+    from unit_cost_app import show_unit_cost_app
+    from credit_days_calculator import show_credit_days_calculator
+    from inventory_turnover_calculator import show_inventory_turnover_calculator
+    from financial_resilience_app import show_resilience_map
+    from qspm_two_strategies import show_qspm_tool
+    from pricing_power_radar import show_pricing_power_radar
+except ImportError as e:
+    st.error(f"Missing file: {e}")
 
-# ----------------------------------------
-# 1. Κατηγοριοποίηση (Free vs Premium)
-# ----------------------------------------
-# Εδώ είναι το "δόλωμα" για τον κυρ-Βαγγέλη και το "χρυσάφι" για τον γιο
-free_tools = {
-    "📊 Βασικά Εργαλεία (Free)": [
-        ("Υπολογισμός Κόστους Μονάδας", show_unit_cost_app),
-        ("Ημέρες Πίστωσης (Ποιος χρωστάει)", show_credit_days_calculator),
-        ("Ταχύτητα Αποθέματος", show_inventory_turnover_calculator),
-        ("Break-Even Analysis", show_break_even_shift_calculator),
-    ]
-}
+# --- SETTINGS & STYLE ---
+st.set_page_config(page_title="Managers’ Lab", page_icon="🧪", layout="wide")
 
-premium_tools = {
-    "🛡️ Survival Engine (Premium)": [
-        ("Financial Resilience Map", show_resilience_map),
-        ("QSPM – Στρατηγική Επιλογή", show_qspm_tool),
-        ("Pricing Power Radar", show_pricing_power_radar),
-    ]
-}
+# CSS για να φαίνεται σαν Pro App στο tablet
+st.markdown("""
+<style>
+    .stButton>button { width: 100%; border-radius: 10px; height: 3.5em; font-weight: bold; margin-bottom: 10px; }
+    .stAlert { border-radius: 10px; }
+    .main { background-color: #f8f9fa; }
+</style>
+""", unsafe_allow_html=True)
 
-# ----------------------------------------
-# 2. Session State & Access Control
-# ----------------------------------------
-if "is_premium" not in st.session_state:
-    st.session_state.is_premium = False # Ξεκινάει ως Free
-
+# --- SESSION STATE ---
 if "selected_tool" not in st.session_state:
-    st.session_state.selected_tool = "🏠 Home"
+    st.session_state.selected_tool = "Home"
+if "is_premium" not in st.session_state:
+    st.session_state.is_premium = False
 
-# ----------------------------------------
-# 3. Sidebar (Tablet Optimized)
-# ----------------------------------------
-st.sidebar.title("🧪 Managers’ Lab")
+# --- SIDEBAR (Η "Βιτρίνα") ---
+with st.sidebar:
+    st.title("🧪 Managers’ Lab")
+    
+    if st.button("🏠 Αρχική Σελίδα"):
+        st.session_state.selected_tool = "Home"
+    
+    st.divider()
+    st.subheader("👴 Για τον Κυρ-Βαγγέλη (Free)")
+    if st.button("📊 Κόστος Μονάδας"): st.session_state.selected_tool = "UnitCost"
+    if st.button("📅 Ποιος Χρωστάει (Credit)"); st.session_state.selected_tool = "CreditDays"
+    if st.button("📦 Ταχύτητα Αποθέματος"): st.session_state.selected_tool = "Inventory"
+    
+    st.divider()
+    st.subheader("👨‍💼 Για τον Διάδοχο (Premium)")
+    # Ένδειξη κλειδώματος
+    res_label = "🛡️ Survival Map" if st.session_state.is_premium else "🔒 Survival Map"
+    qspm_label = "🧭 Στρατηγική QSPM" if st.session_state.is_premium else "🔒 Στρατηγική QSPM"
+    
+    if st.button(res_label): st.session_state.selected_tool = "Resilience"
+    if st.button(qspm_label): st.session_state.selected_tool = "QSPM"
+    
+    if not st.session_state.is_premium:
+        st.warning("Ξεκλείδωσε το Survival Engine για 7 ημέρες")
+        if st.button("🔓 Unlock All (10€)"):
+            st.session_state.is_premium = True
+            st.rerun()
 
-# FREE SECTION (Για τον πατέρα)
-st.sidebar.subheader("🆓 Ελεύθερη Χρήση")
-for name, func in free_tools["📊 Βασικά Εργαλεία (Free)"]:
-    if st.sidebar.button(name, key=f"free_{name}"):
-        st.session_state.selected_tool = name
+# --- MAIN RENDER LOGIC ---
 
-st.sidebar.divider()
-
-# PREMIUM SECTION (Για τον γιο)
-st.sidebar.subheader("💎 Survival Engine")
-if not st.session_state.is_premium:
-    st.sidebar.info("🔓 Ξεκλείδωσε την πλήρη στρατηγική ανάλυση (7 ημέρες - 10€)")
-    if st.sidebar.button("Unlock All Tools", type="primary"):
-        st.session_state.is_premium = True # Εδώ θα έμπαινε η πληρωμή
-        st.rerun()
-
-for name, func in premium_tools["🛡️ Survival Engine (Premium)"]:
-    # Αν δεν είναι premium, δείξε λουκέτο
-    label = name if st.session_state.is_premium else f"🔒 {name}"
-    if st.sidebar.button(label, key=f"prem_{name}"):
-        if st.session_state.is_premium:
-            st.session_state.selected_tool = name
-        else:
-            st.session_state.selected_tool = "Unlock_Page"
-
-# ----------------------------------------
-# 4. Render Logic
-# ----------------------------------------
-
-# Αρχική Σελίδα
-if st.session_state.selected_tool == "🏠 Home":
-    show_home() # Το κείμενο που έχεις ήδη για το Decision Path
-
-# Σελίδα Πληρωμής / Teaser
-elif st.session_state.selected_tool == "Unlock_Page":
-    st.title("🛡️ Ξεκλείδωσε το Survival Engine")
+# 1. HOME PAGE
+if st.session_state.selected_tool == "Home":
+    st.title("🧪 Managers’ Lab")
+    st.subheader("A structured decision laboratory for managers.")
+    
     st.markdown("""
-    ### Ο κυρ-Βαγγέλης ξέρει τα νούμερα. Εσύ ξέρεις τη Στρατηγική;
+    Αυτό δεν είναι ένα απλό λογιστικό φύλλο. Είναι ο **Οδηγός Επιβίωσης** της επιχείρησης.
     
-    Για να πείσεις τον πατέρα σου ότι η επιχείρηση χρειάζεται **επιστημονική διοίκηση**, πρέπει να του δείξεις τι θα γίνει αν η αγορά αλλάξει αύριο.
-    
-    **Με το Premium Access ξεκλειδώνεις:**
-    1. **Financial Resilience Map:** Το στίγμα της εταιρείας στον χάρτη επιβίωσης.
-    2. **Stress Test Simulator:** Τι συμβαίνει στο ταμείο αν πέσει ο τζίρος 20%.
-    3. **Strategy Comparison (QSPM):** Για να παίρνεις αποφάσεις με δεδομένα, όχι με το "ένστικτο".
-    
-    **Κόστος:** 10€ για 7 ημέρες. Κατέβασε τα PDF, δείξε τα στον πατέρα σου, γίνε ο επόμενος Leader.
+    - **Ο Κυρ-Βαγγέλης** χρησιμοποιεί την εμπειρία του.
+    - **Ο Διάδοχος** χρησιμοποιεί το Lab για να αποδείξει τι αντέχει η επιχείρηση.
     """)
     
     
-    
-    if st.button("Απόκτησε Πρόσβαση Τώρα"):
-        st.session_state.is_premium = True
-        st.success("Η πρόσβαση ενεργοποιήθηκε!")
-        st.rerun()
 
-# Φόρτωση των εργαλείων
-else:
-    # Ψάξε στα Free
-    for name, func in free_tools["📊 Βασικά Εργαλεία (Free)"]:
-        if name == st.session_state.selected_tool:
-            func()
+    st.info("💡 Ξεκίνα από τα Free εργαλεία στο πλάι ή ξεκλείδωσε το 'Survival Engine' για πλήρη ανάλυση.")
     
-    # Ψάξε στα Premium
-    for name, func in premium_tools["🛡️ Survival Engine (Premium)"]:
-        if name == st.session_state.selected_tool:
-            func()
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Survival", "Phase 1")
+    with col2:
+        st.metric("Structure", "Phase 2")
+    with col3:
+        st.metric("Strategy", "Phase 3")
 
-# ----------------------------------------
-# Footer (Quick Exit)
-# ----------------------------------------
-if st.session_state.selected_tool != "🏠 Home":
-    if st.sidebar.button("🏠 Επιστροφή στην Αρχική"):
-        st.session_state.selected_tool = "🏠 Home"
-        st.rerun()
+# 2. FREE TOOLS
+elif st.session_state.selected_tool == "UnitCost":
+    show_unit_cost_app()
+elif st.session_state.selected_tool == "CreditDays":
+    show_credit_days_calculator()
+elif st.session_state.selected_tool == "Inventory":
+    show_inventory_turnover_calculator()
+
+# 3. PREMIUM TOOLS (With Paywall Check)
+elif st.session_state.selected_tool in ["Resilience", "QSPM"]:
+    if not st.session_state.is_premium:
+        st.title("🛡️ Survival Engine (Locked)")
+        st.markdown("""
+        ### Γιατί να το ξεκλειδώσεις;
+        Ο πατέρας σου ξέρει τα νούμερα στο κεφάλι του. Εσύ πρέπει να του δείξεις τον **Χάρτη Επιβίωσης**.
+        
+        **Τι θα πάρεις με το 7-ήμερο Unlock:**
+        - **Resilience Map:** Δες αν η εταιρεία "σκάει" σε ένα σοκ 20% στην αγορά.
+        - **Strategy Comparison:** Σύγκρινε δύο δρόμους (π.χ. Επέκταση vs Οικονομία) με νούμερα.
+        - **Professional Reports:** Δείξε στο tablet γραφήματα που δεν αμφισβητούνται.
+        
+        **Κόστος:** 10€ (Μία φορά - Πρόσβαση για 7 ημέρες)
+        """)
+        
+        if st.button("Ενεργοποίηση Πρόσβασης Τώρα"):
+            st.session_state.is_premium = True
+            st.rerun()
+    else:
+        # Αν είναι premium, δείξε το εργαλείο
+        if st.session_state.selected_tool == "Resilience":
+            show_resilience_map()
+        else:
+            show_qspm_tool()
+
+# FOOTER
+st.divider()
+st.caption("Managers’ Lab · Built for the Next Generation of Decision Makers.")
