@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 1. ΕΙΣΑΓΩΓΗ ΤΩΝ ΕΡΓΑΛΕΙΩΝ
+# 1. TOOL IMPORTS
 try:
     from unit_cost_app import show_unit_cost_app
     from credit_days_calculator import show_credit_days_calculator
@@ -8,17 +8,18 @@ try:
     from financial_resilience_app import show_resilience_map
     from qspm_two_strategies import show_qspm_tool
 except ImportError as e:
-    st.error(f"Λείπει αρχείο: {e}")
+    st.error(f"Missing component: {e}")
 
 # --- SETTINGS & STYLE ---
 st.set_page_config(page_title="Managers’ Lab", page_icon="🧪", layout="wide")
 
-# CSS για Tablet-Friendly περιβάλλον
+# Professional Tablet-First CSS
 st.markdown("""
 <style>
-    .stButton>button { width: 100%; border-radius: 12px; height: 3.8em; font-weight: bold; border: 1px solid #d1d1d1; }
-    .stMetric { background-color: #ffffff; border: 1px solid #e0e0e0; padding: 10px; border-radius: 10px; }
-    .sidebar .sidebar-content { background-image: linear-gradient(#f8f9fa, #e9ecef); }
+    .stButton>button { width: 100%; border-radius: 8px; height: 3.5em; font-weight: 600; border: 1px solid #e0e0e0; }
+    .stMetric { background-color: #ffffff; border: 1px solid #eee; padding: 15px; border-radius: 12px; }
+    .sidebar .sidebar-content { background-color: #fcfcfc; }
+    h1, h2, h3 { color: #1e293b; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -28,28 +29,29 @@ if "selected_tool" not in st.session_state:
 if "is_premium" not in st.session_state:
     st.session_state.is_premium = False
 
-# --- SIDEBAR ---
+# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.title("🧪 Managers’ Lab")
     
-    if st.sidebar.button("🏠 Αρχική Σελίδα"):
+    if st.sidebar.button("🏠 Dashboard Home"):
         st.session_state.selected_tool = "Home"
     
     st.divider()
-    st.subheader("👴 Εργαλεία για τον Πατέρα (Free)")
-    # ΔΙΟΡΘΩΜΕΝΗ ΣΥΝΤΑΞΗ ΕΔΩ
-    if st.sidebar.button("📊 Κόστος Μονάδας"): 
+    st.subheader("📊 Operational Essentials")
+    st.caption("Baseline metrics (Free Access)")
+    if st.sidebar.button("Unit Cost Calculator"): 
         st.session_state.selected_tool = "UnitCost"
-    if st.sidebar.button("📅 Ποιος Χρωστάει (Credit)"): 
+    if st.sidebar.button("Accounts Receivable (Credit)"): 
         st.session_state.selected_tool = "CreditDays"
-    if st.sidebar.button("📦 Ταχύτητα Αποθέματος"): 
+    if st.sidebar.button("Inventory Velocity"): 
         st.session_state.selected_tool = "Inventory"
     
     st.divider()
-    st.subheader("👨‍💼 Για τον Διάδοχο (Premium)")
+    st.subheader("💎 Strategic Intelligence")
+    st.caption("Advanced system diagnostics")
     
-    res_label = "🛡️ Survival Map" if st.session_state.is_premium else "🔒 Survival Map"
-    qspm_label = "🧭 Στρατηγική QSPM" if st.session_state.is_premium else "🔒 Στρατηγική QSPM"
+    res_label = "🛡️ Financial Resilience Map" if st.session_state.is_premium else "🔒 Financial Resilience Map"
+    qspm_label = "🧭 Strategic Choice (QSPM)" if st.session_state.is_premium else "🔒 Strategic Choice (QSPM)"
     
     if st.sidebar.button(res_label): 
         st.session_state.selected_tool = "Resilience"
@@ -57,31 +59,33 @@ with st.sidebar:
         st.session_state.selected_tool = "QSPM"
     
     if not st.session_state.is_premium:
-        st.info("Unlock Survival Engine (10€)")
-        if st.sidebar.button("🔓 Ξεκλείδωμα Τώρα", type="primary"):
+        st.info("Full Access: 7-Day Pass (€10)")
+        if st.sidebar.button("🔓 Unlock Strategic Suite", type="primary"):
             st.session_state.is_premium = True
             st.rerun()
 
-# --- MAIN RENDER LOGIC ---
+# --- MAIN DISPLAY LOGIC ---
 
 if st.session_state.selected_tool == "Home":
     st.title("🧪 Managers’ Lab")
     st.markdown("""
-    ### Οδηγός Επιβίωσης & Λήψης Αποφάσεων
+    ### Systemic Decision Engineering
     
-    Εδώ δεν κάνουμε απλή λογιστική. Εδώ χαρτογραφούμε την αντοχή της επιχείρησης στα σοκ της αγοράς.
+    Welcome to the Lab. This environment is designed to strip away intuition and replace it with **structural visibility**. 
+    Every decision made here follows a cold, analytical path from operational cost to strategic survival.
     
-    **Πώς να ξεκινήσεις:**
-    1. Χρησιμοποίησε τα **δωρεάν εργαλεία** για να ελέγξεις τα καθημερινά σου έξοδα και εισπράξεις.
-    2. Ξεκλείδωσε το **Survival Engine** για να δεις αν η επιχείρηση θα αντέξει μια κρίση ή αν το επόμενο βήμα σου είναι ασφαλές.
+    **Workflow:**
+    1. **Operational Audit:** Use the 'Essentials' to verify margins and credit health.
+    2. **Resilience Testing:** Unlock 'Strategic Intelligence' to map your system's breaking point under market shocks.
     """)
-    
-    
 
+    
+    
     st.divider()
-    c1, c2 = st.columns(2)
-    c1.info("**Για τον κυρ-Βαγγέλη:** Εστίασε στο Κόστος και την Αποθήκη. Τα νούμερα που ξέρεις, σε γράφημα.")
-    c2.success("**Για τον Γιο:** Εστίασε στη Ρευστότητα και τη Στρατηγική. Απόδειξε ότι ξέρεις να διοικείς με δεδομένα.")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Current Status", "Active")
+    c2.metric("Environment", "Live Analysis")
+    c3.metric("System Model", "365-Day Cycle")
 
 elif st.session_state.selected_tool == "UnitCost":
     show_unit_cost_app()
@@ -94,18 +98,21 @@ elif st.session_state.selected_tool == "Inventory":
 
 elif st.session_state.selected_tool in ["Resilience", "QSPM"]:
     if not st.session_state.is_premium:
-        st.title("🛡️ Survival Engine (Locked)")
+        st.title("🛡️ Strategic Intelligence Suite")
         st.markdown("""
-        ### Γιατί ο γιος πρέπει να το ξεκλειδώσει;
+        ### Premium Feature Restricted
+        This module provides high-level diagnostics that analyze the **structural integrity** of your business. 
         
-        Ο κυρ-Βαγγέλης έχει το ένστικτο, εσύ όμως χρειάζεσαι την **απόδειξη**. 
-        Με το 7-ήμερο Unlock μπορείς να του δείξεις:
-        - **Τον Χάρτη Επιβίωσης:** Πού βρίσκεται η εταιρεία σε σχέση με τον κίνδυνο.
-        - **Stress Test:** Τι θα συμβεί αν αύριο οι πελάτες πληρώσουν 15 μέρες αργότερα.
-        - **Σύγκριση Στρατηγικής:** Γιατί η "ιδέα σου" είναι οικονομικά καλύτερη.
+        **Unlock includes:**
+        - **Resilience Mapping:** Visualizing your position in the survival/efficiency matrix.
+        - **Stress Simulation:** Testing cash-flow stability against sudden revenue drops.
+        - **Strategic Comparison:** Quantitative evaluation of competing business paths.
+        
+        **Pass Validity:** 7 Calendar Days  
+        **Fee:** €10.00 (Single payment)
         """)
         
-        if st.button("Unlock All Tools for 7 Days (10€)", type="primary"):
+        if st.button("Activate 7-Day Strategic Access", type="primary"):
             st.session_state.is_premium = True
             st.rerun()
     else:
@@ -116,4 +123,4 @@ elif st.session_state.selected_tool in ["Resilience", "QSPM"]:
 
 # FOOTER
 st.divider()
-st.caption("Managers’ Lab · Built for Managers, Trusted by Founders.")
+st.caption("Managers’ Lab · Analytical Rigor · Strategic Survival · 2026")
