@@ -1,147 +1,124 @@
 import streamlit as st
 
-# ----------------------------------------
-# Imports of all tools
-# ----------------------------------------
+# --- Imports των εργαλείων σου ---
 from home import show_home
 from start_here import show_start_here
 from break_even_shift_calculator import show_break_even_shift_calculator
-from clv_calculator import show_clv_calculator
-from substitution_analysis_tool import show_substitutes_sensitivity_tool
-from complementary_analysis import show_complementary_analysis
-from loss_threshold import show_loss_threshold_before_price_cut
-from credit_policy_app import show_credit_policy_analysis
-from supplier_credit_app import show_supplier_credit_analysis
-from cash_cycle import run_cash_cycle_app
-from loan_vs_leasing_calculator import loan_vs_leasing_ui
 from unit_cost_app import show_unit_cost_app
-from discount_npv_ui import show_discount_npv_ui
 from credit_days_calculator import show_credit_days_calculator
 from inventory_turnover_calculator import show_inventory_turnover_calculator
-from qspm_two_strategies import show_qspm_tool
 from pricing_power_radar import show_pricing_power_radar
-from cash_fragility_index import show_cash_fragility_index
-
-
-# ----------------------------------------
-# Page config
-# ----------------------------------------
-st.set_page_config(
-    page_title="Managers’ Lab",
-    page_icon="🧪",
-    layout="centered"
-)
+from qspm_two_strategies import show_qspm_tool
+# Φέρε και το νέο Resilience Map που φτιάξαμε
+from financial_resilience_app import show_resilience_map 
 
 # ----------------------------------------
-# Tool registry
+# 1. Κατηγοριοποίηση (Free vs Premium)
 # ----------------------------------------
-tool_categories = {
-    "🏠 Home": [
-        ("Home", show_home)
-    ],
+# Εδώ είναι το "δόλωμα" για τον κυρ-Βαγγέλη και το "χρυσάφι" για τον γιο
+free_tools = {
+    "📊 Βασικά Εργαλεία (Free)": [
+        ("Υπολογισμός Κόστους Μονάδας", show_unit_cost_app),
+        ("Ημέρες Πίστωσης (Ποιος χρωστάει)", show_credit_days_calculator),
+        ("Ταχύτητα Αποθέματος", show_inventory_turnover_calculator),
+        ("Break-Even Analysis", show_break_even_shift_calculator),
+    ]
+}
 
-    "💡 Getting Started": [
-        ("Start Here", show_start_here)
-    ],
-
-    "📈 Break-Even & Pricing": [
-        ("Break-Even Shift Analysis", show_break_even_shift_calculator),
-        ("Loss Threshold Before Price Cut", show_loss_threshold_before_price_cut),
-        ("Pricing Power Radar", show_pricing_power_radar),  # ✅ ΤΟ ΒΑΛΑΜΕ ΣΩΣΤΑ ΕΔΩ
-    ],
-
-    "👥 Customer Value": [
-        ("CLV Analysis", show_clv_calculator),
-        ("Strategic Substitution Analysis", show_substitutes_sensitivity_tool),
-        ("Complementary Product Analysis", show_complementary_analysis),
-    ],
-
-    "💰 Finance & Cash Flow": [
-        ("Cash Cycle Calculator", run_cash_cycle_app),
-        ("Credit Policy Analysis", show_credit_policy_analysis),
-        ("Supplier Payment Analysis", show_supplier_credit_analysis),
-        ("Loan vs Leasing Analysis", loan_vs_leasing_ui),
-        ("Cash Fragility Index", show_cash_fragility_index),
-    ],
-
-    "📊 Cost & Profit": [
-        ("Unit Cost Calculator", show_unit_cost_app),
-        ("Discount NPV Analysis", show_discount_npv_ui),
-    ],
-
-    "📦 Inventory & Operations": [
-        ("Credit Days Calculator", show_credit_days_calculator),
-        ("Inventory Turnover Analysis", show_inventory_turnover_calculator),
-    ],
-
-    "🧭 Strategy & Decision": [
-        ("QSPM – Strategy Comparison", show_qspm_tool),
-    ],
+premium_tools = {
+    "🛡️ Survival Engine (Premium)": [
+        ("Financial Resilience Map", show_resilience_map),
+        ("QSPM – Στρατηγική Επιλογή", show_qspm_tool),
+        ("Pricing Power Radar", show_pricing_power_radar),
+    ]
 }
 
 # ----------------------------------------
-# Session state initialization
+# 2. Session State & Access Control
 # ----------------------------------------
-if "selected_category" not in st.session_state:
-    st.session_state.selected_category = "🏠 Home"
+if "is_premium" not in st.session_state:
+    st.session_state.is_premium = False # Ξεκινάει ως Free
 
 if "selected_tool" not in st.session_state:
-    st.session_state.selected_tool = "Home"
+    st.session_state.selected_tool = "🏠 Home"
 
 # ----------------------------------------
-# Sidebar
+# 3. Sidebar (Tablet Optimized)
 # ----------------------------------------
 st.sidebar.title("🧪 Managers’ Lab")
 
-category_keys = list(tool_categories.keys())
+# FREE SECTION (Για τον πατέρα)
+st.sidebar.subheader("🆓 Ελεύθερη Χρήση")
+for name, func in free_tools["📊 Βασικά Εργαλεία (Free)"]:
+    if st.sidebar.button(name, key=f"free_{name}"):
+        st.session_state.selected_tool = name
 
-selected_category = st.sidebar.selectbox(
-    "Select category",
-    category_keys,
-    index=category_keys.index(st.session_state.selected_category)
-)
+st.sidebar.divider()
 
-# Reset tool if category changed
-if selected_category != st.session_state.selected_category:
-    st.session_state.selected_category = selected_category
-    st.session_state.selected_tool = tool_categories[selected_category][0][0]
-
-tools_in_category = tool_categories[st.session_state.selected_category]
-tool_names = [t[0] for t in tools_in_category]
-
-selected_tool = st.sidebar.radio(
-    "Choose tool",
-    tool_names,
-    index=tool_names.index(st.session_state.selected_tool)
-)
-
-st.session_state.selected_tool = selected_tool
-
-# ----------------------------------------
-# Back to Home button
-# ----------------------------------------
-if not (
-    st.session_state.selected_category == "🏠 Home"
-    and st.session_state.selected_tool == "Home"
-):
-    if st.sidebar.button("← Back to Lab"):
-        st.session_state.selected_category = "🏠 Home"
-        st.session_state.selected_tool = "Home"
+# PREMIUM SECTION (Για τον γιο)
+st.sidebar.subheader("💎 Survival Engine")
+if not st.session_state.is_premium:
+    st.sidebar.info("🔓 Ξεκλείδωσε την πλήρη στρατηγική ανάλυση (7 ημέρες - 10€)")
+    if st.sidebar.button("Unlock All Tools", type="primary"):
+        st.session_state.is_premium = True # Εδώ θα έμπαινε η πληρωμή
         st.rerun()
 
-# ----------------------------------------
-# Render selected tool
-# ----------------------------------------
-for name, func in tools_in_category:
-    if name == st.session_state.selected_tool:
-        func()
-        break
+for name, func in premium_tools["🛡️ Survival Engine (Premium)"]:
+    # Αν δεν είναι premium, δείξε λουκέτο
+    label = name if st.session_state.is_premium else f"🔒 {name}"
+    if st.sidebar.button(label, key=f"prem_{name}"):
+        if st.session_state.is_premium:
+            st.session_state.selected_tool = name
+        else:
+            st.session_state.selected_tool = "Unlock_Page"
 
 # ----------------------------------------
-# Footer
+# 4. Render Logic
 # ----------------------------------------
-st.divider()
-st.caption(
-    "Managers’ Lab · Decision Laboratory\n"
-    "Exploration is open. Structural integrity is mandatory."
-)
+
+# Αρχική Σελίδα
+if st.session_state.selected_tool == "🏠 Home":
+    show_home() # Το κείμενο που έχεις ήδη για το Decision Path
+
+# Σελίδα Πληρωμής / Teaser
+elif st.session_state.selected_tool == "Unlock_Page":
+    st.title("🛡️ Ξεκλείδωσε το Survival Engine")
+    st.markdown("""
+    ### Ο κυρ-Βαγγέλης ξέρει τα νούμερα. Εσύ ξέρεις τη Στρατηγική;
+    
+    Για να πείσεις τον πατέρα σου ότι η επιχείρηση χρειάζεται **επιστημονική διοίκηση**, πρέπει να του δείξεις τι θα γίνει αν η αγορά αλλάξει αύριο.
+    
+    **Με το Premium Access ξεκλειδώνεις:**
+    1. **Financial Resilience Map:** Το στίγμα της εταιρείας στον χάρτη επιβίωσης.
+    2. **Stress Test Simulator:** Τι συμβαίνει στο ταμείο αν πέσει ο τζίρος 20%.
+    3. **Strategy Comparison (QSPM):** Για να παίρνεις αποφάσεις με δεδομένα, όχι με το "ένστικτο".
+    
+    **Κόστος:** 10€ για 7 ημέρες. Κατέβασε τα PDF, δείξε τα στον πατέρα σου, γίνε ο επόμενος Leader.
+    """)
+    
+    
+    
+    if st.button("Απόκτησε Πρόσβαση Τώρα"):
+        st.session_state.is_premium = True
+        st.success("Η πρόσβαση ενεργοποιήθηκε!")
+        st.rerun()
+
+# Φόρτωση των εργαλείων
+else:
+    # Ψάξε στα Free
+    for name, func in free_tools["📊 Βασικά Εργαλεία (Free)"]:
+        if name == st.session_state.selected_tool:
+            func()
+    
+    # Ψάξε στα Premium
+    for name, func in premium_tools["🛡️ Survival Engine (Premium)"]:
+        if name == st.session_state.selected_tool:
+            func()
+
+# ----------------------------------------
+# Footer (Quick Exit)
+# ----------------------------------------
+if st.session_state.selected_tool != "🏠 Home":
+    if st.sidebar.button("🏠 Επιστροφή στην Αρχική"):
+        st.session_state.selected_tool = "🏠 Home"
+        st.rerun()
