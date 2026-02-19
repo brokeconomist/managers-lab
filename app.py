@@ -1,25 +1,32 @@
 import streamlit as st
 
-# 1. TOOL IMPORTS
+# 1. COMPREHENSIVE TOOL IMPORTS
 try:
     from unit_cost_app import show_unit_cost_app
     from credit_days_calculator import show_credit_days_calculator
     from inventory_turnover_calculator import show_inventory_turnover_calculator
     from financial_resilience_app import show_resilience_map
     from qspm_two_strategies import show_qspm_tool
+    from break_even_shift_calculator import show_break_even_shift_calculator
+    from clv_calculator import show_clv_calculator
+    from pricing_power_radar import show_pricing_power_radar
+    from cash_cycle import run_cash_cycle_app
+    from credit_policy_app import show_credit_policy_analysis
+    from loan_vs_leasing_calculator import loan_vs_leasing_ui
+    from cash_fragility_index import show_cash_fragility_index
+    from loss_threshold import show_loss_threshold_before_price_cut
 except ImportError as e:
     st.error(f"Missing component: {e}")
 
 # --- SETTINGS & STYLE ---
 st.set_page_config(page_title="Managers’ Lab", page_icon="🧪", layout="wide")
 
-# Professional Tablet-First CSS
 st.markdown("""
 <style>
-    .stButton>button { width: 100%; border-radius: 8px; height: 3.5em; font-weight: 600; border: 1px solid #e0e0e0; }
-    .stMetric { background-color: #ffffff; border: 1px solid #eee; padding: 15px; border-radius: 12px; }
-    .sidebar .sidebar-content { background-color: #fcfcfc; }
-    h1, h2, h3 { color: #1e293b; }
+    .stButton>button { width: 100%; border-radius: 8px; height: 3.2em; font-weight: 600; margin-bottom: 8px; }
+    .stMetric { background-color: #ffffff; border: 1px solid #eee; padding: 10px; border-radius: 10px; }
+    h1, h2, h3 { color: #0f172a; }
+    .sidebar .sidebar-content { background-color: #f8fafc; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -37,90 +44,106 @@ with st.sidebar:
         st.session_state.selected_tool = "Home"
     
     st.divider()
+    
+    # --- GROUP 1: OPERATIONAL ESSENTIALS (FREE) ---
     st.subheader("📊 Operational Essentials")
-    st.caption("Baseline metrics (Free Access)")
-    if st.sidebar.button("Unit Cost Calculator"): 
-        st.session_state.selected_tool = "UnitCost"
-    if st.sidebar.button("Accounts Receivable (Credit)"): 
-        st.session_state.selected_tool = "CreditDays"
-    if st.sidebar.button("Inventory Velocity"): 
-        st.session_state.selected_tool = "Inventory"
+    st.caption("Standard Performance Metrics")
     
+    # Dictionary to map button names to tool keys
+    free_tools = {
+        "Unit Cost Calculator": "UnitCost",
+        "Accounts Receivable (Credit)": "CreditDays",
+        "Inventory Velocity": "Inventory",
+        "Break-Even Analysis": "BreakEven",
+        "Cash Cycle Calculator": "CashCycle",
+        "Loan vs Leasing": "LoanLeasing"
+    }
+    
+    for label, key in free_tools.items():
+        if st.sidebar.button(label): st.session_state.selected_tool = key
+
     st.divider()
+    
+    # --- GROUP 2: STRATEGIC INTELLIGENCE (PREMIUM) ---
     st.subheader("💎 Strategic Intelligence")
-    st.caption("Advanced system diagnostics")
+    st.caption("Systemic Risk & Choice Analysis")
     
-    res_label = "🛡️ Financial Resilience Map" if st.session_state.is_premium else "🔒 Financial Resilience Map"
-    qspm_label = "🧭 Strategic Choice (QSPM)" if st.session_state.is_premium else "🔒 Strategic Choice (QSPM)"
-    
-    if st.sidebar.button(res_label): 
-        st.session_state.selected_tool = "Resilience"
-    if st.sidebar.button(qspm_label): 
-        st.session_state.selected_tool = "QSPM"
-    
+    premium_tools = {
+        "Financial Resilience Map": "Resilience",
+        "Strategic Choice (QSPM)": "QSPM",
+        "Pricing Power Radar": "PricingPower",
+        "CLV & Customer Value": "CLV",
+        "Cash Fragility Index": "Fragility",
+        "Loss Threshold Analysis": "LossThreshold"
+    }
+
+    for label, key in premium_tools.items():
+        display_label = label if st.session_state.is_premium else f"🔒 {label}"
+        if st.sidebar.button(display_label):
+            st.session_state.selected_tool = key
+
     if not st.session_state.is_premium:
-        st.info("Full Access: 7-Day Pass (€10)")
-        if st.sidebar.button("🔓 Unlock Strategic Suite", type="primary"):
+        st.divider()
+        st.warning("Strategic Suite Locked")
+        if st.sidebar.button("🔓 Unlock 7-Day Pass (€10)", type="primary"):
             st.session_state.is_premium = True
             st.rerun()
 
-# --- MAIN DISPLAY LOGIC ---
+# --- MAIN RENDER LOGIC ---
 
 if st.session_state.selected_tool == "Home":
     st.title("🧪 Managers’ Lab")
     st.markdown("""
     ### Systemic Decision Engineering
-    
-    Welcome to the Lab. This environment is designed to strip away intuition and replace it with **structural visibility**. 
-    Every decision made here follows a cold, analytical path from operational cost to strategic survival.
-    
-    **Workflow:**
-    1. **Operational Audit:** Use the 'Essentials' to verify margins and credit health.
-    2. **Resilience Testing:** Unlock 'Strategic Intelligence' to map your system's breaking point under market shocks.
+    Analysis is structured in two tiers: **Operational Efficiency** and **Strategic Survival**.
+    Calculations are based on a **365-day fiscal year** as per system constraints.
     """)
 
     
-    
-    st.divider()
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Current Status", "Active")
-    c2.metric("Environment", "Live Analysis")
-    c3.metric("System Model", "365-Day Cycle")
 
-elif st.session_state.selected_tool == "UnitCost":
-    show_unit_cost_app()
+    c1, c2 = st.columns(2)
+    with c1:
+        st.info("💡 **Operational Tier:** Focus on margins, cash cycles, and unit economics. These are your baseline survival metrics.")
+    with c2:
+        st.success("🎯 **Strategic Tier:** Focus on risk absorption, pricing power, and alternative path comparisons.")
 
-elif st.session_state.selected_tool == "CreditDays":
-    show_credit_days_calculator()
+# --- ROUTING LOGIC ---
 
-elif st.session_state.selected_tool == "Inventory":
-    show_inventory_turnover_calculator()
+# FREE TOOLS
+elif st.session_state.selected_tool == "UnitCost": show_unit_cost_app()
+elif st.session_state.selected_tool == "CreditDays": show_credit_days_calculator()
+elif st.session_state.selected_tool == "Inventory": show_inventory_turnover_calculator()
+elif st.session_state.selected_tool == "BreakEven": show_break_even_shift_calculator()
+elif st.session_state.selected_tool == "CashCycle": run_cash_cycle_app()
+elif st.session_state.selected_tool == "LoanLeasing": loan_vs_leasing_ui()
 
-elif st.session_state.selected_tool in ["Resilience", "QSPM"]:
+# PREMIUM TOOLS (With Access Control)
+elif st.session_state.selected_tool in premium_tools.values():
     if not st.session_state.is_premium:
-        st.title("🛡️ Strategic Intelligence Suite")
+        st.title("🛡️ Strategic Suite Restricted")
         st.markdown("""
-        ### Premium Feature Restricted
-        This module provides high-level diagnostics that analyze the **structural integrity** of your business. 
+        ### Access Required
+        This module contains advanced diagnostic tools designed for structural business analysis.
         
-        **Unlock includes:**
-        - **Resilience Mapping:** Visualizing your position in the survival/efficiency matrix.
-        - **Stress Simulation:** Testing cash-flow stability against sudden revenue drops.
-        - **Strategic Comparison:** Quantitative evaluation of competing business paths.
+        **Your current path requires visibility into:**
+        - Systemic Resilience & Breaking Points
+        - Pricing Power & Elasticity
+        - High-Stakes Strategy Selection (QSPM)
         
-        **Pass Validity:** 7 Calendar Days  
-        **Fee:** €10.00 (Single payment)
+        **One-time 7-day access: €10.00**
         """)
-        
-        if st.button("Activate 7-Day Strategic Access", type="primary"):
+        if st.button("Activate Full Access"):
             st.session_state.is_premium = True
             st.rerun()
     else:
-        if st.session_state.selected_tool == "Resilience":
-            show_resilience_map()
-        else:
-            show_qspm_tool()
+        # Actual tool calls
+        if st.session_state.selected_tool == "Resilience": show_resilience_map()
+        elif st.session_state.selected_tool == "QSPM": show_qspm_tool()
+        elif st.session_state.selected_tool == "PricingPower": show_pricing_power_radar()
+        elif st.session_state.selected_tool == "CLV": show_clv_calculator()
+        elif st.session_state.selected_tool == "Fragility": show_cash_fragility_index()
+        elif st.session_state.selected_tool == "LossThreshold": show_loss_threshold_before_price_cut()
 
 # FOOTER
 st.divider()
-st.caption("Managers’ Lab · Analytical Rigor · Strategic Survival · 2026")
+st.caption("Managers’ Lab · Professional Grade · 365-Day Logic")
