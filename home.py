@@ -1,131 +1,71 @@
-import streamlit as st
+st.title("🧪 Managers’ Lab")
 
-def show_home():
+st.markdown("""
+A structured decision laboratory for managers.
 
-    # -------------------------------------------------
-    # HEADER
-    # -------------------------------------------------
-    st.title("🧪 Managers’ Lab")
+This is not a dashboard.  
+This is not a reporting tool.  
+This is not a forecasting engine.
 
-    st.markdown("""
-A decision laboratory for managers.  
-Not a dashboard. Not a reporting or forecasting tool.  
+Managers’ Lab follows a fixed decision path.
 
-Managers’ Lab tests what must be true for a decision to work —  
-and what breaks when it doesn’t.  
+Every important business decision —
+pricing, cost changes, credit policy, investment —
+first affects survival,
+then structure,
+then sustainability,
+and only after that, strategy.
 
-The tools are already built. Judgment is yours.
-    """)
+This Lab makes you examine them in that order.
+""")
 
-    st.divider()
-    st.markdown("**Choose the type of decision you are trying to make.**")
+st.divider()
 
-    # -------------------------------------------------
-    # DECISION GROUPS
-    # -------------------------------------------------
+st.markdown("""
+### The Decision Path
 
-    st.subheader("Pricing & Viability")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Break-Even Shift Analysis"):
-            st.session_state.selected_category = "📈 Break-Even & Pricing"
-            st.session_state.selected_tool = "Break-Even Shift Analysis"
-    with col2:
-        if st.button("Loss Threshold Before Price Cut"):
-            st.session_state.selected_category = "📈 Break-Even & Pricing"
-            st.session_state.selected_tool = "Loss Threshold Before Price Cut"
+You will move through five stages.
 
-    st.subheader("Customer Economics")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("CLV Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "CLV Analysis"
-    with col2:
-        if st.button("Substitution Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "Substitution Analysis"
-    with col3:
-        if st.button("Complementary Product Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "Complementary Product Analysis"
+There are no shortcuts.
+There is no skipping ahead.
 
-    st.subheader("Cash Flow & Financing")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Cash Cycle Calculator"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Cash Cycle Calculator"
-    with col2:
-        if st.button("Credit Policy Analysis"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Credit Policy Analysis"
-    with col3:
-        if st.button("Supplier Payment Analysis"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Supplier Payment Analysis"
+The sequence is intentional.
+""")
 
-    st.subheader("Cost Structure & Profitability")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Unit Cost Calculator"):
-            st.session_state.selected_category = "📊 Cost & Profit"
-            st.session_state.selected_tool = "Unit Cost Calculator"
-    with col2:
-        if st.button("Discount NPV Analysis"):
-            st.session_state.selected_category = "📊 Cost & Profit"
-            st.session_state.selected_tool = "Discount NPV Analysis"
+st.markdown("""
+**1. Survival Anchor**  
+Can the business survive small structural shifts?
 
-    st.subheader("Inventory & Operations")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Inventory Turnover Analysis"):
-            st.session_state.selected_category = "📦 Inventory & Operations"
-            st.session_state.selected_tool = "Inventory Turnover Analysis"
-    with col2:
-        if st.button("Credit Days Calculator"):
-            st.session_state.selected_category = "📦 Inventory & Operations"
-            st.session_state.selected_tool = "Credit Days Calculator"
+**2. Structural Pressure**  
+Where does cash or margin break first?
 
-    st.subheader("Strategy & Decision")
-    if st.button("QSPM – Strategy Comparison"):
-        st.session_state.selected_category = "🧭 Strategy & Decision"
-        st.session_state.selected_tool = "QSPM – Strategy Comparison"
+**3. Unit Economics**  
+What must remain true at the operational level?
 
-    st.divider()
+**4. Sustainability**  
+Is value creation durable or fragile?
 
-    # -------------------------------------------------
-    # COFFEE BUTTON (optional support)
-    # -------------------------------------------------
-    #col1, col2, col3 = st.columns([1, 2, 1])
-    #with col2:
-        #st.markdown(
-            #"<div style='text-align: center;'>"
-            #"<a href='https://buymeacoffee.com/USERNAME' target='_blank'>"
-            #"☕ Buy me a coffee"
-            #"</a>"
-            #"</div>",
-            #unsafe_allow_html=True
-        #)
-        #st.caption("For those who find value here.")
+**5. Strategic Choice**  
+Only after constraints are visible, comparison begins.
+""")
 
-    #st.divider()
+st.divider()
 
-    # -------------------------------------------------
-    # HOW TO USE (micro-polished)
-    # -------------------------------------------------
-    st.markdown("""
-**How to use the Lab**  
-Open a tool from the sidebar or main menu once the decision frame is clear. Focus on tolerance, not forecasts — small changes compound structurally.
-    """)
+st.markdown("""
+You are not here to find the “right answer.”
 
-    st.divider()
+You are here to understand:
 
-    # -------------------------------------------------
-    # CONTACT
-    # -------------------------------------------------
-    st.markdown("""
-**Contact**  
-For feedback, questions, or collaboration:  
-✉️ manosv18@gmail.com
-    """)
+- What must be true for this decision to work.
+- How much error the system tolerates.
+- Which assumption fails first.
+
+If the numbers feel uncomfortable, the Lab is working.
+""")
+
+st.divider()
+
+if st.button("Start Structured Decision Path"):
+    st.session_state.flow_step = 1
+
+st.caption("Advanced users may access individual tools from the sidebar.")
