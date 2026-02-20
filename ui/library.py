@@ -32,11 +32,29 @@ def show_library():
         ]
     }
 
-    selected_cat = st.selectbox("Choose Category", list(categories.keys()))
+    # 1. Βρίσκουμε αν υπάρχει ήδη επιλεγμένο εργαλείο από το Home
+    default_cat_index = 0
+    default_tool_index = 0
+    
+    if "selected_tool" in st.session_state and st.session_state.selected_tool:
+        for cat_idx, (cat_name, tools) in enumerate(categories.items()):
+            for t_idx, t in enumerate(tools):
+                if t[0] == st.session_state.selected_tool:
+                    default_cat_index = cat_idx
+                    default_tool_index = t_idx
+
+    # 2. UI για την επιλογή (με προ-επιλεγμένα τα indexes)
+    selected_cat = st.selectbox("Choose Category", list(categories.keys()), index=default_cat_index)
+    
     tool_list = categories[selected_cat]
     tool_names = [t[0] for t in tool_list]
-    selected_tool_name = st.radio("Select Tool", tool_names)
+    
+    # Αν αλλάξαμε κατηγορία χειροκίνητα, μηδενίζουμε το tool index για να μην κρασάρει
+    if default_tool_index >= len(tool_names): default_tool_index = 0
+    
+    selected_tool_name = st.radio("Select Tool", tool_names, index=default_tool_index)
 
+    # 3. Φόρτωση του εργαλείου
     tool_data = next(t for t in tool_list if t[0] == selected_tool_name)
     file_name = tool_data[1]
     function_name = tool_data[2]
@@ -44,10 +62,9 @@ def show_library():
     st.divider()
 
     try:
-        # Δυναμική φόρτωση από τον φάκελο tools
         module = __import__(f"tools.{file_name}", fromlist=[function_name])
         func = getattr(module, function_name)
         func()
     except Exception as e:
-        st.error(f"Error loading: {file_name}. Check file name and function name.")
-        st.info(f"Details: {e}")
+        st.error(f"Error loading: {file_name}")
+    
