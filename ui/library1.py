@@ -4,7 +4,7 @@ def show_library():
     st.title("📚 Tool Library")
     st.caption("Direct access to all analytical modules.")
 
-    # Ομαδοποίηση εργαλείων για καλύτερο UX
+    # Ομαδοποίηση εργαλείων
     categories = {
         "📈 Pricing & Break-Even": [
             ("Break-Even Shift Analysis", "break_even_shift_calculator", "show_break_even_shift_calculator"),
@@ -33,26 +33,21 @@ def show_library():
     }
 
     selected_cat = st.selectbox("Choose Category", list(categories.keys()))
-    
-    # Λίστα εργαλείων της κατηγορίας
     tool_list = categories[selected_cat]
     tool_names = [t[0] for t in tool_list]
-    
     selected_tool_name = st.radio("Select Tool", tool_names)
 
-    # Εύρεση των στοιχείων του επιλεγμένου εργαλείου
     tool_data = next(t for t in tool_list if t[0] == selected_tool_name)
     file_name = tool_data[1]
     function_name = tool_data[2]
 
     st.divider()
 
-    # Δυναμικό Import και εκτέλεση
     try:
-        # Σημαντικό: Το import γίνεται από τον φάκελο tools
+        # Δυναμική φόρτωση από τον φάκελο tools
         module = __import__(f"tools.{file_name}", fromlist=[function_name])
         func = getattr(module, function_name)
         func()
     except Exception as e:
-        st.error(f"Error loading tool: {file_name}. Check if the file exists in /tools.")
-        st.info(f"Technical details: {e}")
+        st.error(f"Error loading: {file_name}. Check file name and function name.")
+        st.info(f"Details: {e}")
