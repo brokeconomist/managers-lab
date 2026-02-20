@@ -14,7 +14,8 @@ def show_home():
     try:
         # Υπολογισμοί από το Shared Core (system_state)
         revenue = st.session_state.price * st.session_state.volume
-        margin = (st.session_state.price - st.session_state.variable_cost) / st.session_state.price
+        price = st.session_state.price if st.session_state.price > 0 else 1 # Avoid division by zero
+        margin = (price - st.session_state.variable_cost) / price
         ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
         
         st.subheader("🏥 System Health Index")
