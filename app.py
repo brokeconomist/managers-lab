@@ -1,24 +1,27 @@
 import streamlit as st
 
-# --- INITIALIZATION ---
+# 1. SETUP ΣΕΛΙΔΑΣ
+st.set_page_config(page_title="Managers’ Lab", layout="wide")
+
+# 2. INITIALIZATION
 if "mode" not in st.session_state:
-    st.session_state.mode = "path"
+    st.session_state.mode = "home"
 if "flow_step" not in st.session_state:
     st.session_state.flow_step = 1
 
-# --- IMPORT UI COMPONENTS ---
+# 3. IMPORT UI COMPONENTS
 from ui.sidebar import render_sidebar
 from ui.home import show_home
 
-# Render the sidebar (handles mode switching)
+# Εμφάνιση Sidebar
 render_sidebar()
 
-# --- ROUTING LOGIC ---
+# 4. ROUTING (Δρομολόγηση)
 if st.session_state.mode == "home":
     show_home()
 
 elif st.session_state.mode == "path":
-    # Structured Journey Logic
+    # Structured Journey
     if st.session_state.flow_step == 1:
         from path.step1_survival import run_step
         run_step()
@@ -36,6 +39,5 @@ elif st.session_state.mode == "path":
         run_step()
 
 elif st.session_state.mode == "library":
-    # Direct Access Logic
     from ui.library import show_library
     show_library()
