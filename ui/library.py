@@ -66,7 +66,7 @@ def show_library():
     if "selected_tool" in st.session_state:
         st.session_state.selected_tool = None
 
-   try:
+    try:
         module = __import__(f"tools.{file_name}", fromlist=[function_name])
         func = getattr(module, function_name)
         func()
