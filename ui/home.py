@@ -1,171 +1,83 @@
 import streamlit as st
 
-
-import streamlit as st
-
 def show_home():
-    st.title("🚀 Managers' Lab: Global Strategy")
-    st.markdown("---")
-
-    # Υπολογισμοί για το Health Index
-    revenue = st.session_state.price * st.session_state.volume
-    margin = (st.session_state.price - st.session_state.variable_cost) / st.session_state.price
-    ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
-
-    st.subheader("🏥 System Health Index")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    # Φανάρι 1: Profitability
-    with col1:
-        color = "green" if margin > 0.3 else "orange" if margin > 0.15 else "red"
-        st.markdown(f"**Profitability:** :{color}[{margin:.1%}]")
-        st.caption("Gross Margin Health")
-
-    # Φανάρι 2: Liquidity
-    with col2:
-        color = "green" if ccc < 45 else "orange" if ccc < 90 else "red"
-        st.markdown(f"**Liquidity Gap:** :{color}[{ccc} Days]")
-        st.caption("Cash Conversion Cycle")
-
-    # Φανάρι 3: Volume Efficiency
-    with col3:
-        breakeven = st.session_state.fixed_cost / (st.session_state.price - st.session_state.variable_cost)
-        safety_margin = (st.session_state.volume / breakeven) - 1
-        color = "green" if safety_margin > 0.2 else "orange" if safety_margin > 0 else "red"
-        st.markdown(f"**Survival Margin:** :{color}[{safety_margin:.1%}]")
-        st.caption("Distance from Break-even")
-
-    st.markdown("---")
-    st.info("💡 Tip: Go to 'Break-Even Analysis' to update the global core data.")
-
-def show_home():
-
-    # -------------------------------------------------
-    # HEADER
-    # -------------------------------------------------
+    # 1. HEADER & INTRO
     st.title("🧪 Managers’ Lab")
-
     st.markdown("""
-A decision laboratory for managers.  
-Not a dashboard. Not a reporting or forecasting tool.  
-
-Managers’ Lab tests what must be true for a decision to work —  
-and what breaks when it doesn’t.  
-
-The tools are already built. Judgment is yours.
+    A decision laboratory for managers. Not a dashboard. Not a reporting tool.  
+    **Managers’ Lab tests what must be true for a decision to work.**
     """)
+
+    st.divider()
+
+    # 2. SYSTEM HEALTH INDEX (The "Cold Truth" Layer)
+    # Υπολογισμοί από το Shared State
+    try:
+        revenue = st.session_state.price * st.session_state.volume
+        margin = (st.session_state.price - st.session_state.variable_cost) / st.session_state.price
+        ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
+        
+        st.subheader("🏥 System Health Index")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            color = "green" if margin > 0.3 else "orange" if margin > 0.15 else "red"
+            st.metric("Profitability (Gross)", f"{margin:.1%}", delta_color="normal")
+            st.caption(f":{color}[Status based on {st.session_state.price}€ price]")
+
+        with col2:
+            color = "green" if ccc < 45 else "orange" if ccc < 90 else "red"
+            st.metric("Liquidity Gap", f"{int(ccc)} Days", delta_color="inverse")
+            st.caption(f":{color}[Cash Conversion Cycle]")
+
+        with col3:
+            breakeven = st.session_state.fixed_cost / (st.session_state.price - st.session_state.variable_cost) if (st.session_state.price - st.session_state.variable_cost) > 0 else 1
+            safety_margin = (st.session_state.volume / breakeven) - 1
+            color = "green" if safety_margin > 0.2 else "orange" if safety_margin > 0 else "red"
+            st.metric("Survival Margin", f"{safety_margin:.1%}")
+            st.caption(f":{color}[Distance from Break-even]")
+            
+    except Exception as e:
+        st.warning("Initialize system state to see Health Index.")
 
     st.divider()
     st.markdown("**Choose the type of decision you are trying to make.**")
 
-    # -------------------------------------------------
-    # DECISION GROUPS
-    # -------------------------------------------------
+    # 3. DECISION GROUPS (Buttons)
+    # Χρησιμοποιούμε columns για να είναι φιλικό σε tablet
+    
+    st.subheader("📈 Pricing & Viability")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Break-Even Shift Analysis", use_container_width=True):
+            st.info("Navigate to Library -> Pricing & Break-Even")
+    with c2:
+        if st.button("Loss Threshold Analysis", use_container_width=True):
+            st.info("Navigate to Library -> Pricing & Break-Even")
 
-    st.subheader("Pricing & Viability")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Break-Even Shift Analysis"):
-            st.session_state.selected_category = "📈 Break-Even & Pricing"
-            st.session_state.selected_tool = "Break-Even Shift Analysis"
-    with col2:
-        if st.button("Loss Threshold Before Price Cut"):
-            st.session_state.selected_category = "📈 Break-Even & Pricing"
-            st.session_state.selected_tool = "Loss Threshold Before Price Cut"
+    st.subheader("💰 Cash Flow & Finance")
+    c3, c4 = st.columns(2)
+    with c3:
+        if st.button("Cash Cycle Calculator", use_container_width=True):
+            st.info("Navigate to Library -> Finance & Cash Flow")
+    with c4:
+        if st.button("Credit Policy Analysis", use_container_width=True):
+            st.info("Navigate to Library -> Finance & Cash Flow")
 
-    st.subheader("Customer Economics")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("CLV Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "CLV Analysis"
-    with col2:
-        if st.button("Substitution Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "Substitution Analysis"
-    with col3:
-        if st.button("Complementary Product Analysis"):
-            st.session_state.selected_category = "👥 Customer Value"
-            st.session_state.selected_tool = "Complementary Product Analysis"
-
-    st.subheader("Cash Flow & Financing")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Cash Cycle Calculator"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Cash Cycle Calculator"
-    with col2:
-        if st.button("Credit Policy Analysis"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Credit Policy Analysis"
-    with col3:
-        if st.button("Supplier Payment Analysis"):
-            st.session_state.selected_category = "💰 Finance & Cash Flow"
-            st.session_state.selected_tool = "Supplier Payment Analysis"
-
-    st.subheader("Cost Structure & Profitability")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Unit Cost Calculator"):
-            st.session_state.selected_category = "📊 Cost & Profit"
-            st.session_state.selected_tool = "Unit Cost Calculator"
-    with col2:
-        if st.button("Discount NPV Analysis"):
-            st.session_state.selected_category = "📊 Cost & Profit"
-            st.session_state.selected_tool = "Discount NPV Analysis"
-
-    st.subheader("Inventory & Operations")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Inventory Turnover Analysis"):
-            st.session_state.selected_category = "📦 Inventory & Operations"
-            st.session_state.selected_tool = "Inventory Turnover Analysis"
-    with col2:
-        if st.button("Credit Days Calculator"):
-            st.session_state.selected_category = "📦 Inventory & Operations"
-            st.session_state.selected_tool = "Credit Days Calculator"
-
-    st.subheader("Strategy & Decision")
-    if st.button("QSPM – Strategy Comparison"):
-        st.session_state.selected_category = "🧭 Strategy & Decision"
-        st.session_state.selected_tool = "QSPM – Strategy Comparison"
+    st.subheader("📦 Operations & Costs")
+    c5, c6 = st.columns(2)
+    with c5:
+        if st.button("Unit Cost Calculator", use_container_width=True):
+            st.info("Navigate to Library -> Operations")
+    with c6:
+        if st.button("Inventory Turnover", use_container_width=True):
+            st.info("Navigate to Library -> Operations")
 
     st.divider()
 
-    # -------------------------------------------------
-    # COFFEE BUTTON (optional support)
-    # -------------------------------------------------
-    #col1, col2, col3 = st.columns([1, 2, 1])
-    #with col2:
-        #st.markdown(
-            #"<div style='text-align: center;'>"
-            #"<a href='https://buymeacoffee.com/USERNAME' target='_blank'>"
-            #"☕ Buy me a coffee"
-            #"</a>"
-            #"</div>",
-            #unsafe_allow_html=True
-        #)
-        #st.caption("For those who find value here.")
-
-    #st.divider()
-
-    # -------------------------------------------------
-    # HOW TO USE (micro-polished)
-    # -------------------------------------------------
+    # 4. FOOTER
     st.markdown("""
-**How to use the Lab**  
-Open a tool from the sidebar or main menu once the decision frame is clear. Focus on tolerance, not forecasts — small changes compound structurally.
+    **How to use the Lab** Focus on **tolerance**, not forecasts. Small changes in the Shared Core (Price, Volume, Costs) compound structurally across all tools.
+    
+    **Contact** ✉️ manosv18@gmail.com
     """)
-
-    st.divider()
-
-    # -------------------------------------------------
-    # CONTACT
-    # -------------------------------------------------
-    st.markdown("""
-**Contact**  
-For feedback, questions, or collaboration:  
-✉️ manosv18@gmail.com
-    """)
-
