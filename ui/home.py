@@ -1,5 +1,44 @@
 import streamlit as st
 
+
+import streamlit as st
+
+def show_home():
+    st.title("🚀 Managers' Lab: Global Strategy")
+    st.markdown("---")
+
+    # Υπολογισμοί για το Health Index
+    revenue = st.session_state.price * st.session_state.volume
+    margin = (st.session_state.price - st.session_state.variable_cost) / st.session_state.price
+    ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
+
+    st.subheader("🏥 System Health Index")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    # Φανάρι 1: Profitability
+    with col1:
+        color = "green" if margin > 0.3 else "orange" if margin > 0.15 else "red"
+        st.markdown(f"**Profitability:** :{color}[{margin:.1%}]")
+        st.caption("Gross Margin Health")
+
+    # Φανάρι 2: Liquidity
+    with col2:
+        color = "green" if ccc < 45 else "orange" if ccc < 90 else "red"
+        st.markdown(f"**Liquidity Gap:** :{color}[{ccc} Days]")
+        st.caption("Cash Conversion Cycle")
+
+    # Φανάρι 3: Volume Efficiency
+    with col3:
+        breakeven = st.session_state.fixed_cost / (st.session_state.price - st.session_state.variable_cost)
+        safety_margin = (st.session_state.volume / breakeven) - 1
+        color = "green" if safety_margin > 0.2 else "orange" if safety_margin > 0 else "red"
+        st.markdown(f"**Survival Margin:** :{color}[{safety_margin:.1%}]")
+        st.caption("Distance from Break-even")
+
+    st.markdown("---")
+    st.info("💡 Tip: Go to 'Break-Even Analysis' to update the global core data.")
+
 def show_home():
 
     # -------------------------------------------------
