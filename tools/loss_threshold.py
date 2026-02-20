@@ -1,121 +1,59 @@
 import streamlit as st
 import pandas as pd
 
-# -----------------------
-# Utilities
-# -----------------------
-
-def parse_number(number_str):
-    try:
-        return float(str(number_str).replace(',', ''))
-    except:
-        return None
-
-def format_percentage(number, decimals=1):
-    return f"{number:.{decimals}f}%"
-
-# -----------------------
-# Calculation Logic
-# -----------------------
-
-def calculate_sales_loss_threshold(comp_old, comp_new, our_price, unit_cost):
-    try:
-        # Price change ratio of competitor
-        comp_price_change = (comp_new - comp_old) / comp_old
-        # Our contribution margin ratio
-        our_margin_ratio = (unit_cost - our_price) / our_price
-        
-        if our_margin_ratio == 0:
-            return None
-            
-        # The threshold: How much volume loss equals the profit loss of a price match
-        result = comp_price_change / our_margin_ratio
-        return result * 100 
-    except ZeroDivisionError:
-        return None
-
-# -----------------------
-# Main UI
-# -----------------------
-
 def show_loss_threshold_before_price_cut():
-    st.header("📉 Sales Loss Threshold Analysis")
-    st.write("Determine the structural limit of volume loss before a defensive price reduction becomes mathematically necessary.")
+    st.header("📉 Loss Threshold Analysis")
+    st.info("Calculates the required volume increase to maintain profit after a price drop.")
 
-    # SIDEBAR: Strategic Inputs
-    with st.sidebar:
-        st.subheader("Competitor Action")
-        c_old = st.text_input("Competitor's Original Price (€)", "8.00")
-        c_new = st.text_input("Competitor's New Price (€)", "7.20")
+    # 1. SYNC WITH SHARED CORE
+    # Τραβάμε τις τιμές που ορίστηκαν στο Home ή στο Survival Anchor
+    p = st.session_state.get('price', 20.0)
+    vc = st.session_state.get('variable_cost', 12.0)
+    q = st.session_state.get('volume', 1000)
+    
+    current_margin_euro = p - vc
+    current_margin_pct = (current_margin_euro / p) if p > 0 else 0
+
+    # Εμφάνιση των τρεχόντων δεδομένων για επιβεβαίωση
+    st.write(f"**Current Baseline:** Price: {p:.2f}€ | Unit VC: {vc:.2f}€ | Current Margin: {current_margin_pct:.1%}")
+
+    st.divider()
+
+    # 2. INPUTS ΓΙΑ ΤΗΝ ΕΚΠΤΩΣΗ
+    col1, col2 = st.columns(2)
+    with col1:
+        price_cut_pct = st.slider("Proposed Price Discount (%)", 0, 50, 10) / 100
+    with col2:
+        st.write(f"**New Price:** {p * (1 - price_cut_pct):.2f} €")
+
+    # 3. CALCULATIONS (The Cold Math)
+    # Τύπος: Required Q Change = (Price Cut %) / (Original Margin % - Price Cut %)
+    if current_margin_pct > price_cut_pct:
+        req_vol_increase = price_cut_pct / (current_margin_pct - price_cut_pct)
+        new_q = q * (1 + req_vol_increase)
+    else:
+        req_vol_increase = float('inf') # Η επιχείρηση μπαίνει μέσα σε κάθε μονάδα
+
+    # 4. RESULTS DISPLAY
+    st.subheader("Results")
+    if req_vol_increase == float('inf'):
+        st.error("🚨 CRITICAL: The proposed discount is equal to or higher than your current margin. You will lose money on every unit sold!")
+    else:
+        res1, res2 = st.columns(2)
+        res1.metric("Required Volume Increase", f"+{req_vol_increase:.1%}")
+        res2.metric("New Target Volume", f"{int(new_q)} units")
         
-        st.divider()
-        st.subheader("Internal Economics")
-        u_price = st.text_input("Our Current Price (€)", "8.00")
-        u_cost = st.text_input("Unit Variable Cost (€)", "4.50")
-        
-        st.divider()
-        run = st.button("Calculate Resilience Threshold")
+        st.warning(f"To keep the same gross profit, you must sell **{int(new_q - q)} additional units** due to the {price_cut_pct:.0%} discount.")
 
-    # MAIN SCREEN: Analytical Results
-    if run:
-        # Data Parsing
-        comp_old = parse_number(c_old)
-        comp_new = parse_number(c_new)
-        our_price = parse_number(u_price)
-        unit_cost = parse_number(u_cost)
+    # 5. SENSITIVITY TABLE
+    st.write("### Discount Sensitivity Table")
+    discounts = [0.02, 0.05, 0.10, 0.15, 0.20]
+    data = []
+    for d in discounts:
+        if current_margin_pct > d:
+            inc = d / (current_margin_pct - d)
+            data.append({"Discount": f"{d:.0%}", "Req. Vol. Increase": f"+{inc:.1%}", "New Price": f"{p*(1-d):.2f}€"})
+    
+    st.table(pd.DataFrame(data))
 
-        if None in (comp_old, comp_new, our_price, unit_cost):
-            st.error("⚠️ Strategic Error: Incomplete financial data. Please check sidebar inputs.")
-            return
-
-        threshold = calculate_sales_loss_threshold(comp_old, comp_new, our_price, unit_cost)
-        comp_drop_pct = ((comp_new - comp_old) / comp_old) * 100
-        our_margin = our_price - unit_cost
-
-        st.subheader("📊 Executive Summary")
-        
-        if threshold is None:
-            st.error("⚠️ Calculation collapsed. Check for zero margins.")
-        elif threshold <= 0:
-            st.warning("❗ No Buffer: Your current margin structure cannot absorb this competitor move.")
-        else:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Max Volume Loss Allowed", format_percentage(threshold))
-            c2.metric("Competitor Price Cut", f"{comp_drop_pct:.1f}%")
-            c3.metric("Current Unit Margin", f"€{our_margin:.2f}")
-
-            # 1. Strategic Interpretation
-            st.divider()
-            st.subheader("🧠 Strategic Interpretation")
-            
-            
-            
-            st.info(f"""
-            **The Cold Reality:** A price match will drop your profit on *every* unit sold. 
-            Staying at your current price is more profitable **as long as your sales drop is less than {format_percentage(threshold)}**.
-            
-            If you expect to lose *more* than {format_percentage(threshold)} of your customers to the competitor, only then is a price cut mathematically justified.
-            """)
-
-            # 2. Risk Matrix
-            st.subheader("📋 Decision Framework")
-            
-            decision_data = {
-                "Scenario": ["Actual Loss < Threshold", "Actual Loss = Threshold", "Actual Loss > Threshold"],
-                "Action": ["HOLD PRICE", "INDIFFERENT", "REDUCE PRICE"],
-                "Financial Impact": ["Higher Profit via Margin", "Breakeven Point", "Profit Protection via Volume"]
-            }
-            st.table(pd.DataFrame(decision_data))
-
-            # 3. Visualization of the Margin Buffer
-            st.divider()
-            st.subheader("📉 Structural Resilience Visualization")
-            
-            # Simple Progress bar to show how much "Safety Room" exists
-            st.write(f"Volume Loss Tolerance: {threshold:.1f}%")
-            st.progress(min(threshold / 100, 1.0))
-            
-            st.caption("Note: This model assumes linear demand and no change in variable costs. It measures the 'Indifference Point' between margin erosion and volume erosion.")
-
-if __name__ == "__main__":
-    show_loss_threshold_before_price_cut()
+    st.caption("Note: This analysis assumes Fixed Costs remain stable. It focuses purely on Contribution Margin protection.")
