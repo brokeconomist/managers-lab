@@ -115,4 +115,27 @@ def loan_vs_leasing_ui():
             
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot([r*100 for r in test_rates], ls_burdens, label='Leasing Cost Curve', color='#1f77b4', marker='o')
-        ax.axhline(y=l_final, color='r', linestyle='--', label=
+        ax.axhline(y=l_final, color='r', linestyle='--', label=f'Loan Fixed Burden')
+        ax.set_xlabel("Leasing Rate (%)")
+        ax.set_ylabel("Final Burden (€)")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        st.pyplot(fig)
+
+        # Indifference Point
+        indifference_rate = None
+        for i in range(len(test_rates) - 1):
+            if (ls_burdens[i] - l_final) * (ls_burdens[i+1] - l_final) <= 0:
+                r1, r2 = test_rates[i], test_rates[i+1]
+                b1, b2 = ls_burdens[i], ls_burdens[i+1]
+                indifference_rate = r1 + (l_final - b1) * (r2 - r1) / (b2 - b1)
+                break
+        
+        if indifference_rate:
+            st.warning(f"**Indifference Point:** Leasing is superior if its rate is below **{indifference_rate*100:.2f}%**.")
+        
+        st.divider()
+        if l_final < ls_final:
+            st.success("✅ **Verdict: Loan financing is quantitatively optimal.**")
+        else:
+            st.success("✅ **Verdict: Leasing is quantitatively optimal.**")
