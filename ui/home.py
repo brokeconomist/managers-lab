@@ -1,83 +1,68 @@
 import streamlit as st
 
 def show_home():
-    # 1. HEADER & INTRO
+    # 1. HEADER
     st.title("🧪 Managers’ Lab")
-    st.markdown("""
-    A decision laboratory for managers. Not a dashboard. Not a reporting tool.  
-    **Managers’ Lab tests what must be true for a decision to work.**
-    """)
+    st.markdown("---")
 
-    st.divider()
-
-    # 2. SYSTEM HEALTH INDEX (The "Cold Truth" Layer)
-    # Υπολογισμοί από το Shared State
+    # 2. SYSTEM HEALTH INDEX (The "Core" Analytics)
+    # Χρησιμοποιούμε try/except για να μην σπάσει αν λείπει κάτι από το state
     try:
-        revenue = st.session_state.price * st.session_state.volume
-        margin = (st.session_state.price - st.session_state.variable_cost) / st.session_state.price
-        ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
-        
-        st.subheader("🏥 System Health Index")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            color = "green" if margin > 0.3 else "orange" if margin > 0.15 else "red"
-            st.metric("Profitability (Gross)", f"{margin:.1%}", delta_color="normal")
-            st.caption(f":{color}[Status based on {st.session_state.price}€ price]")
+        revenue = st.session_state.get('price', 0) * st.session_state.get('volume', 0)
+        margin = (st.session_state.get('price', 0) - st.session_state.get('variable_cost', 0)) / st.session_state.get('price', 1)
+        ccc = st.session_state.get('ar_days', 0) + st.session_state.get('inventory_days', 0) - st.session_state.get('payables_days', 0)
 
-        with col2:
-            color = "green" if ccc < 45 else "orange" if ccc < 90 else "red"
-            st.metric("Liquidity Gap", f"{int(ccc)} Days", delta_color="inverse")
-            st.caption(f":{color}[Cash Conversion Cycle]")
-
-        with col3:
-            breakeven = st.session_state.fixed_cost / (st.session_state.price - st.session_state.variable_cost) if (st.session_state.price - st.session_state.variable_cost) > 0 else 1
-            safety_margin = (st.session_state.volume / breakeven) - 1
-            color = "green" if safety_margin > 0.2 else "orange" if safety_margin > 0 else "red"
-            st.metric("Survival Margin", f"{safety_margin:.1%}")
-            st.caption(f":{color}[Distance from Break-even]")
+        st.subheader("🏥 Business Health Snapshot")
+        c1, c2, c3 = st.columns(3)
+        
+        with c1:
+            m_color = "green" if margin > 0.3 else "orange" if margin > 0.15 else "red"
+            st.metric("Gross Margin", f"{margin:.1%}")
+            st.markdown(f"Status: :{m_color}[Analysis Base]")
             
-    except Exception as e:
-        st.warning("Initialize system state to see Health Index.")
+        with c2:
+            c_color = "green" if ccc < 45 else "orange" if ccc < 90 else "red"
+            st.metric("Cash Gap", f"{int(ccc)} Days")
+            st.markdown(f"Status: :{c_color}[Liquidity]")
 
-    st.divider()
-    st.markdown("**Choose the type of decision you are trying to make.**")
+        with c3:
+            # Υπολογισμός Survival Margin
+            denominator = (st.session_state.price - st.session_state.variable_cost)
+            be_units = st.session_state.fixed_cost / denominator if denominator > 0 else 1
+            safety = (st.session_state.volume / be_units) - 1
+            s_color = "green" if safety > 0.2 else "orange" if safety > 0 else "red"
+            st.metric("Survival Margin", f"{safety:.1%}")
+            st.markdown(f"Status: :{s_color}[Safety]")
 
-    # 3. DECISION GROUPS (Buttons)
-    # Χρησιμοποιούμε columns για να είναι φιλικό σε tablet
-    
-    st.subheader("📈 Pricing & Viability")
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("Break-Even Shift Analysis", use_container_width=True):
-            st.info("Navigate to Library -> Pricing & Break-Even")
-    with c2:
-        if st.button("Loss Threshold Analysis", use_container_width=True):
-            st.info("Navigate to Library -> Pricing & Break-Even")
-
-    st.subheader("💰 Cash Flow & Finance")
-    c3, c4 = st.columns(2)
-    with c3:
-        if st.button("Cash Cycle Calculator", use_container_width=True):
-            st.info("Navigate to Library -> Finance & Cash Flow")
-    with c4:
-        if st.button("Credit Policy Analysis", use_container_width=True):
-            st.info("Navigate to Library -> Finance & Cash Flow")
-
-    st.subheader("📦 Operations & Costs")
-    c5, c6 = st.columns(2)
-    with c5:
-        if st.button("Unit Cost Calculator", use_container_width=True):
-            st.info("Navigate to Library -> Operations")
-    with c6:
-        if st.button("Inventory Turnover", use_container_width=True):
-            st.info("Navigate to Library -> Operations")
+    except Exception:
+        st.warning("⚠️ Core system values are being initialized...")
 
     st.divider()
 
-    # 4. FOOTER
-    st.markdown("""
-    **How to use the Lab** Focus on **tolerance**, not forecasts. Small changes in the Shared Core (Price, Volume, Costs) compound structurally across all tools.
+    # 3. DECISION SHORTCUTS
+    st.subheader("🕹️ Decision Tools")
     
-    **Contact** ✉️ manosv18@gmail.com
-    """)
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("⚖️ Analyze Break-Even & Pricing", use_container_width=True):
+            st.session_state.mode = "library" # Σε στέλνει στη βιβλιοθήκη
+            st.rerun()
+            
+    with col_b:
+        if st.button("💸 Analyze Cash Flow & CCC", use_container_width=True):
+            st.session_state.mode = "library"
+            st.rerun()
+
+    col_c, col_d = st.columns(2)
+    with col_c:
+        if st.button("📦 Analyze Unit Costs", use_container_width=True):
+            st.session_state.mode = "library"
+            st.rerun()
+            
+    with col_d:
+        if st.button("🧭 Strategy Analysis (QSPM)", use_container_width=True):
+            st.session_state.mode = "library"
+            st.rerun()
+
+    st.divider()
+    st.caption("Managers’ Lab v2.0 | Integrated Shared Core Architecture")
