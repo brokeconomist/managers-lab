@@ -61,7 +61,12 @@ def show_library():
 
     st.divider()
 
-    try:
+    # Μόλις το UI φορτώσει τις σωστές επιλογές, καθαρίζουμε το state 
+    # για να επιτρέψουμε στον χρήστη να αλλάξει εργαλείο μετά.
+    if "selected_tool" in st.session_state:
+        st.session_state.selected_tool = None
+
+   try:
         module = __import__(f"tools.{file_name}", fromlist=[function_name])
         func = getattr(module, function_name)
         func()
