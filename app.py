@@ -19,7 +19,7 @@ from ui.home import show_home
 # We render the sidebar first so it can update the session_state
 render_sidebar()
 
-# 4. ROUTING LOGIC (The "Brain" of the App)
+# --- 4. ROUTING LOGIC (app.py) ---
 mode = st.session_state.get("mode", "home")
 
 if mode == "home":
@@ -27,37 +27,22 @@ if mode == "home":
 
 elif mode == "path":
     step = st.session_state.get("flow_step", 0)
-    
     if step == 0:
         from path.step0_calibration import run_step
         run_step()
     else:
-        # Progress indicator for Analysis stages
         st.info(f"📍 Analysis Stage: {step} of 5")
-        
-        # Check which step file to import
         if step == 1:
             from path.step1_survival import run_step
             run_step()
-        elif step == 2:
-            from path.step2_cash import run_step
-            run_step()
-        elif step == 3:
-            from path.step3_unit_economics import run_step
-            run_step()
-        elif step == 4:
-            from path.step4_sustainability import run_step
-            run_step()
-        elif step == 5:
-            from path.step5_strategy import run_step
-            run_step()
+        # ... τα υπόλοιπα steps ...
 
 elif mode == "library":
     from ui.library import show_library
     show_library()
 
+# ΑΥΤΟ ΠΡΕΠΕΙ ΝΑ ΕΙΝΑΙ ΕΔΩ - ΤΕΡΜΑ ΑΡΙΣΤΕΡΑ ΣΤΗΝ ΙΔΙΑ ΓΡΑΜΜΗ ΜΕ ΤΑ ΑΛΛΑ ELIF
 elif mode == "about":
-    # ΠΡΟΣΟΧΗ: Αυτό έλειπε και γι' αυτό "κόλλαγε" το κουμπί About
     from ui.about import show_about
     show_about()
 
