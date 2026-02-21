@@ -62,7 +62,7 @@ elif mode == "path":
         run_step()
     
     elif step == 2:
-        from path.cash_cycle import run_step
+        from path.step2_cash import run_step
         run_step()
     
     elif step == 3:
