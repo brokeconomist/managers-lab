@@ -1,30 +1,63 @@
 import streamlit as st
 
-def initialize_system_state():
-    """Initializes the 5 pillars of the system + UI State."""
+# 1. SETUP ΣΕΛΙΔΑΣ
+st.set_page_config(
+    page_title="Managers' Lab",
+    page_icon="🧪",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-    # UI State
-    if 'mode' not in st.session_state: st.session_state.mode = "home"
-    if 'flow_step' not in st.session_state: st.session_state.flow_step = 0
-    if 'baseline_locked' not in st.session_state: st.session_state.baseline_locked = False
-    if 'selected_tool' not in st.session_state: st.session_state.selected_tool = None
+# 2. INITIALIZATION & SHARED CORE
+from core.system_state import initialize_system_state
 
-    # 1. Revenue Engine
-    if 'price' not in st.session_state: st.session_state.price = 20.0
-    if 'volume' not in st.session_state: st.session_state.volume = 1000
+# Αρχικοποιεί τα πάντα: Baseline, Financials και UI State (mode=home, flow_step=0)
+initialize_system_state()
 
-    # 2. Cost Structure
-    if 'variable_cost' not in st.session_state: st.session_state.variable_cost = 12.0
-    if 'fixed_cost' not in st.session_state: st.session_state.fixed_cost = 5000.0
+# 3. IMPORT & RENDER SIDEBAR
+from ui.sidebar import render_sidebar
+from ui.home import show_home
 
-    # 3. Time & Cash Pressure
-    if 'ar_days' not in st.session_state: st.session_state.ar_days = 45
-    if 'inventory_days' not in st.session_state: st.session_state.inventory_days = 60
-    if 'payables_days' not in st.session_state: st.session_state.payables_days = 30
+render_sidebar()
 
-    # 4. Capital & Financing
-    if 'debt' not in st.session_state: st.session_state.debt = 20000.0
-    if 'interest_rate' not in st.session_state: st.session_state.interest_rate = 0.05
+# 4. ROUTING (Δρομολόγηση)
+mode = st.session_state.get("mode", "home")
 
-    # 5. Durability
-    if 'retention_rate' not in st.session_state: st.session_state.retention_rate = 0.85
+if mode == "home":
+    # Το Adaptive Home: Θα δείξει Entry Mode αν baseline_locked=False
+    # ή Control Center αν baseline_locked=True
+    show_home()
+
+elif mode == "path":
+    step = st.session_state.get("flow_step", 0)
+    
+    # Visual Progress Indicator
+    st.info(f"📍 Current Stage: {step} of 5")
+
+    # Dynamic Path Routing
+    if step == 0:
+        from path.step0_calibration import run_step
+        run_step()
+    elif step == 1:
+        from path.step1_survival import run_step
+        run_step()
+    elif step == 2:
+        from path.step2_cash import run_step
+        run_step()
+    elif step == 3:
+        from path.step3_unit_economics import run_step
+        run_step()
+    elif step == 4:
+        from path.step4_sustainability import run_step
+        run_step()
+    elif step == 5:
+        from path.step5_strategy import run_step
+        run_step()
+
+elif mode == "library":
+    from ui.library import show_library
+    show_library()
+
+# 5. FOOTER
+st.sidebar.divider()
+st.sidebar.caption("v2.0 | Shared Core Architecture")
