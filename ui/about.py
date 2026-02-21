@@ -7,33 +7,38 @@ def show_about():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("The Methodology")
+        st.subheader("Framework Overview")
         st.write("""
-        **Managers' Lab** is a Decision Engineering environment designed for small business 
-        optimization. It bypasses traditional accounting narratives to focus on 
-        the cold reality of cash flow, unit economics, and structural stability.
+        **Managers' Lab** is a structural decision system designed to model 
+        the economic mechanics of a business before strategy is applied.
         
-        The system operates on a **365-day fiscal model**, prioritizing liquidity 
-        and structural stability over abstract growth metrics.
+        It focuses on measurable fundamentals:
+        revenue structure, cost behavior, cash timing, capital pressure, 
+        and durability over a 365-day operating cycle.
+        
+        All analytical modules project stress onto the same shared baseline,
+        ensuring consistency across simulations.
         """)
         
-        st.subheader("Philosophy")
-        st.info("""
-        We believe that most business tragedies are predictable and preventable 
-        through rigorous baseline calibration and stress-testing.
+        st.subheader("What This System Is Not")
+        st.write("""
+        - Not accounting software  
+        - Not KPI decoration  
+        - Not optimism-based forecasting  
+
+        The objective is structural clarity — not presentation.
         """)
 
     with col2:
-        st.subheader("Contact & Feedback")
-        st.write("For technical issues, methodology inquiries, or feedback:")
+        st.subheader("Contact")
+        st.write("For methodology questions or technical feedback:")
         
-        # Στοιχεία επικοινωνίας
         st.markdown("📧 **Email:** manosv@gmail.com")
-        st.markdown("🌐 **Web:** [https://medium.com/@ManosV_18]")
+        st.markdown("🌐 **Medium:** [https://medium.com/@ManosV_18]")
         
         st.divider()
         st.caption("Version: 2.0.1 (Stable Build)")
-        st.caption("Architecture: Shared Core OS")
+        st.caption("Architecture: Shared Core System")
 
     if st.button("⬅️ Back to Control Center"):
         st.session_state.mode = "home"
