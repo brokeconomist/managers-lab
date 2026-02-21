@@ -16,18 +16,23 @@ initialize_system_state()
 from ui.sidebar import render_sidebar
 from ui.home import show_home
 
-# We render the sidebar first so it can update the session_state
+# Render sidebar to handle navigation state updates
 render_sidebar()
 
-# --- 4. ROUTING LOGIC ---
+# --- 4. ROUTING LOGIC (The Brain of the OS) ---
 mode = st.session_state.get("mode", "home")
 
 if mode == "home":
-    show_home() # <-- Βεβαιώσου ότι κλείνει η παρένθεση εδώ
+    show_home()
 
-elif mode == "path": # <-- Γραμμή 24: Τώρα θα δουλέψει
+elif mode == "path":
     step = st.session_state.get("flow_step", 0)
     
+    # Progress indicator for Path mode (Steps 1-5)
+    if step > 0:
+        st.info(f"📍 Path Progress: Stage {step} of 5")
+
+    # Step Routing
     if step == 0:
         from path.step0_calibration import run_step
         run_step()
@@ -37,7 +42,19 @@ elif mode == "path": # <-- Γραμμή 24: Τώρα θα δουλέψει
     elif step == 2:
         from path.step2_cash import run_step
         run_step()
-    # Πρόσθεσε τα υπόλοιπα elif step == X εδώ αν χρειάζεται
+    elif step == 3:
+        from path.step3_unit_economics import run_step
+        run_step()
+    elif step == 4:
+        from path.step4_sustainability import run_step
+        run_step()
+    elif step == 5:
+        from path.step5_strategy import run_step
+        run_step()
+    else:
+        st.warning("Unknown Step. Returning to Calibration.")
+        st.session_state.flow_step = 0
+        st.rerun()
 
 elif mode == "library":
     from ui.library import show_library
@@ -47,6 +64,6 @@ elif mode == "about":
     from ui.about import show_about
     show_about()
 
-# 5. FOOTER
+# 5. FOOTER (Sidebar bottom)
 st.sidebar.divider()
-st.sidebar.caption("v2.0 | Shared Core Architecture | 365-Day Calc")
+st.sidebar.caption("v2.0.1 | Shared Core | 365-Day Cycle")
