@@ -11,7 +11,7 @@ def show_about():
         st.write("""
         **Managers' Lab** is a Decision Engineering environment designed for small business 
         optimization. It bypasses traditional accounting narratives to focus on 
-        the cold reality of cash flow, unit economics, and survival margins.
+        the cold reality of cash flow, unit economics, and structural stability.
         
         The system operates on a **365-day fiscal model**, prioritizing liquidity 
         and structural stability over abstract growth metrics.
@@ -27,7 +27,7 @@ def show_about():
         st.subheader("Contact & Feedback")
         st.write("For technical issues, methodology inquiries, or feedback:")
         
-        # Εδώ βάζεις τα στοιχεία σου
+        # Στοιχεία επικοινωνίας
         st.markdown("📧 **Email:** support@managerslab.com")
         st.markdown("🌐 **Web:** [www.managerslab.com](https://yourwebsite.com)")
         
