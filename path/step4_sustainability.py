@@ -65,4 +65,38 @@ def run_step():
     st.subheader("Profitability Threshold Analysis")
     
     # Generate data for the chart
-    x_range = list(range(0, int(be
+    x_range = list(range(0, int(be_units * 2) if be_units > 0 else 100, 1))
+    rev_y = [x * p for x in x_range]
+    cost_y = [total_monthly_burn + (x * vc) for x in x_range]
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x_range, y=rev_y, name='Total Revenue', line=dict(color='#00CC96')))
+    fig.add_trace(go.Scatter(x=x_range, y=cost_y, name='Total Costs (Fixed + Var)', line=dict(color='#EF553B')))
+    
+    fig.add_vline(x=be_units, line_dash="dash", line_color="white", annotation_text="Break-Even Point")
+    
+    fig.update_layout(xaxis_title="Monthly Units", yaxis_title="Euros (€)", height=450, template="plotly_dark")
+    st.plotly_chart(fig, use_container_width=True)
+
+    
+
+    # 6. STRATEGIC VERDICT
+    if safety_margin < 0:
+        st.error(f"🔴 **STRUCTURAL DEFICIT:** Your current volume ({current_vol:.0f} units/mo) is below the break-even point. You are losing {abs(current_vol - be_units) * unit_margin:,.2f} € every month.")
+    elif safety_margin < 15:
+        st.warning("🟡 **FRAGILE ZONE:** You are barely covering costs. Any slight drop in sales or increase in costs will push you into deficit.")
+    else:
+        st.success("🟢 **SUSTAINABLE SCALE:** Your business model has a healthy buffer to absorb shocks.")
+
+    st.divider()
+
+    # 7. NAVIGATION
+    nav1, nav2 = st.columns(2)
+    with nav1:
+        if st.button("⬅️ Back to Unit Economics"):
+            st.session_state.flow_step = 3
+            st.rerun()
+    with nav2:
+        if st.button("Final Strategy & Stress Test (Stage 5) ➡️", type="primary"):
+            st.session_state.flow_step = 5
+            st.rerun()
