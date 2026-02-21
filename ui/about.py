@@ -28,8 +28,8 @@ def show_about():
         st.write("For technical issues, methodology inquiries, or feedback:")
         
         # Στοιχεία επικοινωνίας
-        st.markdown("📧 **Email:** support@managerslab.com")
-        st.markdown("🌐 **Web:** [www.managerslab.com](https://yourwebsite.com)")
+        st.markdown("📧 **Email:** manosv@gmail.com")
+        st.markdown("🌐 **Web:** [https://medium.com/@ManosV_18]")
         
         st.divider()
         st.caption("Version: 2.0.1 (Stable Build)")
