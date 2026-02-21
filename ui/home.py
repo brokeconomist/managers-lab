@@ -24,9 +24,13 @@ def show_home():
         st.markdown("---")
 
         # Calculations from Shared Core
-        p, v = st.session_state.price, st.session_state.volume
-        vc, fc = st.session_state.variable_cost, st.session_state.fixed_cost
-        debt, rate = st.session_state.debt, st.session_state.interest_rate
+        # Ensure these keys exist in core/system_state.py
+        p = st.session_state.get('price', 0.0)
+        v = st.session_state.get('volume', 0)
+        vc = st.session_state.get('variable_cost', 0.0)
+        fc = st.session_state.get('fixed_cost', 0.0)
+        debt = st.session_state.get('debt', 0.0)
+        rate = st.session_state.get('interest_rate', 0.0)
         
         rev = p * v
         ebit = ((p - vc) * v) - fc
