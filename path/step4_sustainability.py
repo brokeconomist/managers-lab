@@ -1,19 +1,68 @@
 import streamlit as st
-from tools.clv_calculator import show_clv_calculator
-from tools.pricing_power_radar import show_pricing_power_radar
+import pandas as pd
+import plotly.graph_objects as go
 
 def run_step():
-    st.header("Stage 4: Structural Sustainability")
-    st.markdown("""
-    **Objective:** Analyze the long-term health. 
-    We look at Customer Lifetime Value and your actual Pricing Power in the market.
-    """)
+    st.header("🏢 Stage 4: Sustainability & Structural Break-Even")
+    st.info("Calculating the scale required to cover all fixed obligations and debt service.")
+
+    # 1. SYNC WITH SHARED CORE & PREVIOUS STAGES
+    p = st.session_state.get('price', 100.0)
+    vc = st.session_state.get('variable_cost', 60.0)
+    unit_margin = p - vc
     
-    show_clv_calculator()
+    st.write(f"**🔗 Core Baseline:** Margin/Unit: **{unit_margin:,.2f} €**")
+
     st.divider()
-    show_pricing_power_radar()
+
+    # 2. FIXED COSTS INPUTS
+    col1, col2 = st.columns(2)
     
+    with col1:
+        st.subheader("Monthly Operating Costs")
+        rent = st.number_input("Rent & Utilities (€)", value=1500.0)
+        salaries = st.number_input("Salaries & Insurance (€)", value=4500.0)
+        software = st.number_input("Software & Admin (€)", value=500.0)
+        other_fixed = st.number_input("Other Fixed Costs (€)", value=500.0)
+        
+        total_monthly_fixed = rent + salaries + software + other_fixed
+        st.metric("Total Monthly Fixed", f"{total_monthly_fixed:,.2f} €")
+
+    with col2:
+        st.subheader("Capital & Debt Obligations")
+        loan_payment = st.number_input("Monthly Loan Repayment (€)", value=1000.0)
+        taxes_buffer = st.slider("Tax Provision %", 0, 40, 22)
+        
+        total_monthly_burn = total_monthly_fixed + loan_payment
+
+    # 3. CALCULATIONS (The Cold Reality)
+    # Accounting Break-even (Monthly Units)
+    be_units = total_monthly_burn / unit_margin if unit_margin > 0 else 0
+    
+    # Financial Margin of Safety
+    current_vol = st.session_state.get('volume', 1000) / 12 # Monthly volume
+    safety_margin = ((current_vol - be_units) / current_vol) * 100 if current_vol > 0 else -100
+
+    # 4. RESULTS
     st.divider()
-    if st.button("Stage 4 Complete → Final Strategic Choice"):
-        st.session_state.flow_step = 5
-        st.rerun()
+    res1, res2, res3 = st.columns(3)
+    
+    with res1:
+        st.metric("Break-Even Volume", f"{int(be_units)} Units / Mo")
+        st.caption("Units needed just to cover costs")
+
+    with res2:
+        st.metric("Daily Sales Target", f"{be_units/30:.1f} Units")
+        st.caption("Based on 30-day month")
+
+    with res3:
+        color = "normal" if safety_margin > 20 else "inverse"
+        st.metric("Safety Margin", f"{safety_margin:.1f}%", delta=f"{safety_margin:.1f}%", delta_color=color)
+        st.caption("Distance from the 'Danger Zone'")
+
+    # 5. BREAK-EVEN VISUALIZATION
+    st.divider()
+    st.subheader("Profitability Threshold Analysis")
+    
+    # Generate data for the chart
+    x_range = list(range(0, int(be
