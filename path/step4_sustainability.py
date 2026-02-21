@@ -1,110 +1,59 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 
 def run_step():
     st.header("🏢 Stage 4: Sustainability & Structural Break-Even")
-    st.info("Calculating the scale required to cover all fixed obligations and debt service.")
-
-    # 1. SYNC WITH SHARED CORE & PREVIOUS STAGES
-    p = st.session_state.get('price', 100.0)
-    vc = st.session_state.get('variable_cost', 60.0)
-    unit_margin = p - vc
-    current_vol = st.session_state.get('volume', 1000) / 12 # Monthly volume
     
-    st.write(f"**🔗 Core Baseline:** Margin/Unit: **{unit_margin:,.2f} €**")
+    # 1. SYNC WITH PREVIOUS STAGES
+    p = st.session_state.get('price', 0.0)
+    vc = st.session_state.get('variable_cost', 0.0)
+    q_monthly = st.session_state.get('volume', 0.0) / 12
+    unit_margin = p - vc
+    
+    # Τραβάμε το Liquidity Drain (κόστος αποθήκευσης/χρηματοδότησης) από το Stage 2
+    liquidity_drain_annual = st.session_state.get('liquidity_drain', 0.0)
+    liquidity_drain_monthly = liquidity_drain_annual / 12
 
-    st.divider()
-
-    # 2. FIXED COSTS INPUTS
+    # 2. FIXED COSTS
+    st.subheader("Monthly Operating Obligations")
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Monthly Operating Costs")
         rent = st.number_input("Rent & Utilities (€)", value=1500.0)
         salaries = st.number_input("Salaries & Insurance (€)", value=4500.0)
-        software = st.number_input("Software & Admin (€)", value=500.0)
-        other_fixed = st.number_input("Other Fixed Costs (€)", value=500.0)
         
-        total_monthly_fixed = rent + salaries + software + other_fixed
-        st.metric("Total Monthly Fixed", f"{total_monthly_fixed:,.2f} €")
-
     with col2:
-        st.subheader("Capital & Debt Obligations")
+        software = st.number_input("Software & Admin (€)", value=500.0)
         loan_payment = st.number_input("Monthly Loan Repayment (€)", value=1000.0)
-        taxes_buffer = st.slider("Tax Provision %", 0, 40, 22)
-        
-        total_monthly_burn = total_monthly_fixed + loan_payment
 
-    # --- 3. CALCULATIONS ---
-    monthly_revenue = current_vol * p
-    monthly_variable_costs = current_vol * vc
+    # 3. CALCULATIONS
+    total_fixed_costs = rent + salaries + software
+    ebit = (unit_margin * q_monthly) - total_fixed_costs
     
-    # Earnings Before Interest and Taxes (Operating Profit)
-    ebit = monthly_revenue - monthly_variable_costs - total_monthly_fixed
-    
-    # Break-even Calculations (Units needed to cover EVERYTHING including loans)
-    be_units = total_monthly_burn / unit_margin if unit_margin > 0 else 0
-    safety_margin = ((current_vol - be_units) / current_vol) * 100 if current_vol > 0 else -100
-    
-    # Net Profit Logic (What stays in your pocket)
-    tax_amount = (ebit * taxes_buffer / 100) if ebit > 0 else 0
-    net_profit = ebit - loan_payment - tax_amount
+    # Εδώ μπαίνει η δική σου προϋπόθεση: 
+    # Το Slow-moving stock δεν είναι "κενό" αλλά "έξοδο καθυστέρησης" (Carrying Cost)
+    net_profit_before_drain = ebit - loan_payment
+    final_net_profit = net_profit_before_drain - liquidity_drain_monthly
 
-    # --- 4. RESULTS DISPLAY ---
+    # 4. RESULTS DISPLAY
     st.divider()
-    res1, res2 = st.columns(2)
-
-    with res1:
-        st.metric("EBIT (Operating Profit)", f"{ebit:,.2f} €")
-        st.caption("Profit from operations before debt and taxes.")
-
-    with res2:
-        st.metric("Net Profit (Final)", f"{net_profit:,.2f} €", 
-                  delta=f"-{loan_payment + tax_amount:,.2f} € (Obligations)", delta_color="inverse")
-        st.caption("Final cash remaining after all obligations.")
-
-    with st.expander("🔍 Why do EBIT and Net Profit differ?"):
-        st.write(f"""
-        - **EBIT:** Reflects the health of your 'business engine' (Revenue minus Operating Costs).
-        - **Net Profit:** Reflects the owner's actual earnings. We subtracted **{loan_payment:,.2f} €** for loan service and **{tax_amount:,.2f} €** for taxes ({taxes_buffer}%).
-        """)
-
-    # --- 5. BREAK-EVEN VISUALIZATION ---
-    st.divider()
-    st.subheader("Profitability Threshold Analysis")
+    res1, res2, res3 = st.columns(3)
     
-    x_range = list(range(0, int(be_units * 2) if be_units > 0 else 100, 1))
-    rev_y = [x * p for x in x_range]
-    cost_y = [total_monthly_burn + (x * vc) for x in x_range]
+    res1.metric("EBIT (Operating)", f"{ebit:,.2f} €")
     
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x_range, y=rev_y, name='Total Revenue', line=dict(color='#00CC96')))
-    fig.add_trace(go.Scatter(x=x_range, y=cost_y, name='Total Costs (Fixed + Var)', line=dict(color='#EF553B')))
-    fig.add_vline(x=be_units, line_dash="dash", line_color="white", annotation_text="Break-Even Point")
+    # Εμφάνιση του κόστους δέσμευσης κεφαλαίου
+    res2.metric("Slow-Stock Penalty", f"-{liquidity_drain_monthly:,.2f} €", delta="Carrying Cost")
+    res2.caption("Το κόστος επειδή τα κεφάλαια αργούν να κινηθούν.")
     
-    fig.update_layout(xaxis_title="Monthly Units", yaxis_title="Euros (€)", height=400, template="plotly_dark")
-    st.plotly_chart(fig, use_container_width=True)
+    res3.metric("Final Net Profit", f"{final_net_profit:,.2f} €")
 
-    
+    # 5. COLD INSIGHT
+    if liquidity_drain_monthly > (ebit * 0.1):
+        st.warning(f"⚠️ **Analytical Warning:** Το κόστος δέσμευσης των βραδέως κινούμενων αποθεμάτων απορροφά το { (liquidity_drain_monthly/ebit)*100:.1f}% της λειτουργικής σου κερδοφορίας.")
 
-    # --- 6. STRATEGIC VERDICT ---
-    if safety_margin < 0:
-        st.error(f"🔴 **STRUCTURAL DEFICIT:** Current volume ({current_vol:.0f}/mo) is below break-even. Monthly Loss: {abs(net_profit):,.2f} €")
-    elif safety_margin < 15:
-        st.warning(f"🟡 **FRAGILE ZONE:** Safety Margin: {safety_margin:.1f}%. Vulnerable to market shocks.")
-    else:
-        st.success(f"🟢 **SUSTAINABLE SCALE:** Safety Margin: {safety_margin:.1f}%. Business is structurally sound.")
+    st.info("Σημείωση: Το Slow-moving stock δεν υπολογίζεται ως έλλειμμα, αλλά ως λειτουργική επιβάρυνση λόγω του χρόνου δέσμευσης των κεφαλαίων.")
 
-    st.divider()
-
-    # --- 7. NAVIGATION ---
-    nav1, nav2 = st.columns(2)
-    with nav1:
-        if st.button("⬅️ Back to Unit Economics"):
-            st.session_state.flow_step = 3
-            st.rerun()
-    with nav2:
-        if st.button("Final Strategy & Stress Test (Stage 5) ➡️", type="primary"):
-            st.session_state.flow_step = 5
-            st.rerun()
+    # NAVIGATION
+    if st.button("Final Strategy (Stage 5) ➡️"):
+        st.session_state.flow_step = 5
+        st.rerun()
