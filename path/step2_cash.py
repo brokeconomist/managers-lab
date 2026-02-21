@@ -21,9 +21,14 @@ def run_step():
     with col1:
         st.subheader("📦 Inventory")
         inv_days = st.number_input("Inventory Days", min_value=0, value=st.session_state.get('inventory_days', 60))
-        inventory_value = (inv_days / days_in_year) * annual_cogs
-        st.caption(f"Stock Value: {inventory_value:,.2f} €")
+                
+        # Νέος "Cold" υπολογισμός (περιλαμβάνει το Dead Stock):
+        dead_stock_pct = st.slider("Dead Stock / Non-Moving (%)", 0, 50, 10)
+        carrying_cost_pct = 0.20 # 20% ετήσιο κόστος αποθήκευσης/χρηματοδότησης
 
+        effective_inventory_value = inventory_value * (1 + dead_stock_pct/100)
+        liquidity_drain = effective_inventory_value * carrying_cost_pct
+          
     with col2:
         st.subheader("💳 Receivables")
         ar_days = st.number_input("Accounts Receivable Days", min_value=0, value=st.session_state.get('ar_days', 45))
