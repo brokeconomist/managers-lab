@@ -10,6 +10,7 @@ def run_step():
     p = st.session_state.get('price', 100.0)
     vc = st.session_state.get('variable_cost', 60.0)
     unit_margin = p - vc
+    current_vol = st.session_state.get('volume', 1000) / 12 # Monthly volume
     
     st.write(f"**🔗 Core Baseline:** Margin/Unit: **{unit_margin:,.2f} €**")
 
@@ -35,71 +36,65 @@ def run_step():
         
         total_monthly_burn = total_monthly_fixed + loan_payment
 
-    # 3. CALCULATIONS (The Cold Reality)
-    # Accounting Break-even (Monthly Units)
-    be_units = total_monthly_burn / unit_margin if unit_margin > 0 else 0
+    # --- 3. CALCULATIONS (Πρέπει να είναι ΕΝΤΟΣ της συνάρτησης) ---
+    monthly_revenue = current_vol * p
+    monthly_variable_costs = current_vol * vc
+    ebit = monthly_revenue - monthly_variable_costs - total_monthly_fixed
     
-    # Financial Margin of Safety
-    current_vol = st.session_state.get('volume', 1000) / 12 # Monthly volume
+    # Break-even Calculations
+    be_units = total_monthly_burn / unit_margin if unit_margin > 0 else 0
     safety_margin = ((current_vol - be_units) / current_vol) * 100 if current_vol > 0 else -100
-
-    # --- 4. RESULTS (Clear & Analytical) ---
-st.divider()
-res1, res2 = st.columns(2)
-
-with res1:
-    st.metric("EBIT (Operating Profit)", f"{ebit:,.2f} €")
-    st.caption("Κέρδη από τη λειτουργία σου (Revenue - Expenses). Πριν πληρώσεις Τράπεζες και Εφορία.")
-
-with res2:
-    # Υπολογισμός Net Profit με σαφήνεια
+    
+    # Net Profit Logic
     tax_amount = (ebit * taxes_buffer / 100) if ebit > 0 else 0
     net_profit = ebit - loan_payment - tax_amount
-    
-    st.metric("Net Profit (Final)", f"{net_profit:,.2f} €", 
-              delta=f"-{loan_payment + tax_amount:,.2f} € (Obligations)", delta_color="inverse")
-    st.caption("Το καθαρό ποσό που μένει στην τσέπη σου αφού αφαιρεθούν Δάνεια και Φόροι.")
 
-# Επεξηγηματικό Box για να μην υπάρχει σύγχυση
-with st.expander("🔍 Γιατί διαφέρουν αυτά τα δύο νούμερα;"):
-    st.write(f"""
-    1. **EBIT:** Δείχνει αν η επιχείρησή σου είναι κερδοφόρα ως 'δραστηριότητα'.
-    2. **Αφαιρέσεις:** Έχεις ορίσει **{loan_payment} €** για δάνεια και **{taxes_buffer}%** για φόρους.
-    3. **Net Profit:** Είναι το EBIT μείον αυτές τις υποχρεώσεις. Αν θες να ταυτίζονται, μηδένισε το Δάνειο και τον Φόρο στα inputs παραπάνω.
-    """)
-    
-    
-    # 5. BREAK-EVEN VISUALIZATION
+    # --- 4. RESULTS DISPLAY ---
+    st.divider()
+    res1, res2 = st.columns(2)
+
+    with res1:
+        st.metric("EBIT (Operating Profit)", f"{ebit:,.2f} €")
+        st.caption("Κέρδη από τη λειτουργία (Revenue - Expenses).")
+
+    with res2:
+        st.metric("Net Profit (Final)", f"{net_profit:,.2f} €", 
+                  delta=f"-{loan_payment + tax_amount:,.2f} € (Obligations)", delta_color="inverse")
+        st.caption("Καθαρό ποσό μετά από Δάνεια και Φόρους.")
+
+    with st.expander("🔍 Γιατί διαφέρουν το EBIT και το Net Profit;"):
+        st.write(f"""
+        - **EBIT:** Η λειτουργική σου υγεία.
+        - **Net Profit:** Τι μένει στην τσέπη. Αφαιρέθηκαν **{loan_payment:,.2f} €** για το δάνειο και **{tax_amount:,.2f} €** για φόρο ({taxes_buffer}%).
+        """)
+
+    # --- 5. BREAK-EVEN VISUALIZATION ---
     st.divider()
     st.subheader("Profitability Threshold Analysis")
     
-    # Generate data for the chart
     x_range = list(range(0, int(be_units * 2) if be_units > 0 else 100, 1))
     rev_y = [x * p for x in x_range]
     cost_y = [total_monthly_burn + (x * vc) for x in x_range]
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_range, y=rev_y, name='Total Revenue', line=dict(color='#00CC96')))
-    fig.add_trace(go.Scatter(x=x_range, y=cost_y, name='Total Costs (Fixed + Var)', line=dict(color='#EF553B')))
-    
+    fig.add_trace(go.Scatter(x=x_range, y=cost_y, name='Total Costs', line=dict(color='#EF553B')))
     fig.add_vline(x=be_units, line_dash="dash", line_color="white", annotation_text="Break-Even Point")
     
-    fig.update_layout(xaxis_title="Monthly Units", yaxis_title="Euros (€)", height=450, template="plotly_dark")
+    fig.update_layout(xaxis_title="Monthly Units", yaxis_title="Euros (€)", height=400, template="plotly_dark")
     st.plotly_chart(fig, use_container_width=True)
 
-    
-
-    # 6. STRATEGIC VERDICT
+    # --- 6. STRATEGIC VERDICT ---
     if safety_margin < 0:
-        st.error(f"🔴 **STRUCTURAL DEFICIT:** Your current volume ({current_vol:.0f} units/mo) is below the break-even point. You are losing {abs(current_vol - be_units) * unit_margin:,.2f} € every month.")
+        st.error(f"🔴 **STRUCTURAL DEFICIT:** Current volume ({current_vol:.0f}/mo) is below break-even. Monthly Loss: {abs(net_profit):,.2f} €")
     elif safety_margin < 15:
-        st.warning("🟡 **FRAGILE ZONE:** You are barely covering costs. Any slight drop in sales or increase in costs will push you into deficit.")
+        st.warning(f"🟡 **FRAGILE ZONE:** Safety Margin: {safety_margin:.1f}%. Vulnerable to market shocks.")
     else:
-        st.success("🟢 **SUSTAINABLE SCALE:** Your business model has a healthy buffer to absorb shocks.")
+        st.success(f"🟢 **SUSTAINABLE SCALE:** Safety Margin: {safety_margin:.1f}%. Business is structurally sound.")
 
     st.divider()
 
-    # 7. NAVIGATION
+    # --- 7. NAVIGATION ---
     nav1, nav2 = st.columns(2)
     with nav1:
         if st.button("⬅️ Back to Unit Economics"):
