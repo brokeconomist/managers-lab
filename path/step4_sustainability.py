@@ -36,16 +36,18 @@ def run_step():
         
         total_monthly_burn = total_monthly_fixed + loan_payment
 
-    # --- 3. CALCULATIONS (Πρέπει να είναι ΕΝΤΟΣ της συνάρτησης) ---
+    # --- 3. CALCULATIONS ---
     monthly_revenue = current_vol * p
     monthly_variable_costs = current_vol * vc
+    
+    # Earnings Before Interest and Taxes (Operating Profit)
     ebit = monthly_revenue - monthly_variable_costs - total_monthly_fixed
     
-    # Break-even Calculations
+    # Break-even Calculations (Units needed to cover EVERYTHING including loans)
     be_units = total_monthly_burn / unit_margin if unit_margin > 0 else 0
     safety_margin = ((current_vol - be_units) / current_vol) * 100 if current_vol > 0 else -100
     
-    # Net Profit Logic
+    # Net Profit Logic (What stays in your pocket)
     tax_amount = (ebit * taxes_buffer / 100) if ebit > 0 else 0
     net_profit = ebit - loan_payment - tax_amount
 
@@ -55,17 +57,17 @@ def run_step():
 
     with res1:
         st.metric("EBIT (Operating Profit)", f"{ebit:,.2f} €")
-        st.caption("Κέρδη από τη λειτουργία (Revenue - Expenses).")
+        st.caption("Profit from operations before debt and taxes.")
 
     with res2:
         st.metric("Net Profit (Final)", f"{net_profit:,.2f} €", 
                   delta=f"-{loan_payment + tax_amount:,.2f} € (Obligations)", delta_color="inverse")
-        st.caption("Καθαρό ποσό μετά από Δάνεια και Φόρους.")
+        st.caption("Final cash remaining after all obligations.")
 
-    with st.expander("🔍 Γιατί διαφέρουν το EBIT και το Net Profit;"):
+    with st.expander("🔍 Why do EBIT and Net Profit differ?"):
         st.write(f"""
-        - **EBIT:** Η λειτουργική σου υγεία.
-        - **Net Profit:** Τι μένει στην τσέπη. Αφαιρέθηκαν **{loan_payment:,.2f} €** για το δάνειο και **{tax_amount:,.2f} €** για φόρο ({taxes_buffer}%).
+        - **EBIT:** Reflects the health of your 'business engine' (Revenue minus Operating Costs).
+        - **Net Profit:** Reflects the owner's actual earnings. We subtracted **{loan_payment:,.2f} €** for loan service and **{tax_amount:,.2f} €** for taxes ({taxes_buffer}%).
         """)
 
     # --- 5. BREAK-EVEN VISUALIZATION ---
@@ -78,11 +80,13 @@ def run_step():
     
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x_range, y=rev_y, name='Total Revenue', line=dict(color='#00CC96')))
-    fig.add_trace(go.Scatter(x=x_range, y=cost_y, name='Total Costs', line=dict(color='#EF553B')))
+    fig.add_trace(go.Scatter(x=x_range, y=cost_y, name='Total Costs (Fixed + Var)', line=dict(color='#EF553B')))
     fig.add_vline(x=be_units, line_dash="dash", line_color="white", annotation_text="Break-Even Point")
     
     fig.update_layout(xaxis_title="Monthly Units", yaxis_title="Euros (€)", height=400, template="plotly_dark")
     st.plotly_chart(fig, use_container_width=True)
+
+    
 
     # --- 6. STRATEGIC VERDICT ---
     if safety_margin < 0:
