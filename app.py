@@ -20,31 +20,33 @@ from ui.home import show_home
 render_sidebar()
 
 # --- 4. ROUTING LOGIC (app.py) ---
-mode = st.session_state.get("mode", "home")
-
-if mode == "home":
-    show_home()
 
 elif mode == "path":
     step = st.session_state.get("flow_step", 0)
+    
     if step == 0:
         from path.step0_calibration import run_step
         run_step()
     else:
+        # Progress indicator for Analysis stages
         st.info(f"📍 Analysis Stage: {step} of 5")
+        
         if step == 1:
             from path.step1_survival import run_step
             run_step()
-        # ... τα υπόλοιπα steps ...
-
-elif mode == "library":
-    from ui.library import show_library
-    show_library()
-
-# ΑΥΤΟ ΠΡΕΠΕΙ ΝΑ ΕΙΝΑΙ ΕΔΩ - ΤΕΡΜΑ ΑΡΙΣΤΕΡΑ ΣΤΗΝ ΙΔΙΑ ΓΡΑΜΜΗ ΜΕ ΤΑ ΑΛΛΑ ELIF
-elif mode == "about":
-    from ui.about import show_about
-    show_about()
+        elif step == 2:
+            # ΑΥΤΟ ΠΡΕΠΕΙ ΝΑ ΥΠΑΡΧΕΙ ΓΙΑ ΝΑ ΕΜΦΑΝΙΣΤΕΙ ΤΟ ΒΗΜΑ 2
+            from path.step2_cash import run_step
+            run_step()
+        elif step == 3:
+            from path.step3_unit_economics import run_step
+            run_step()
+        elif step == 4:
+            from path.step4_sustainability import run_step
+            run_step()
+        elif step == 5:
+            from path.step5_strategy import run_step
+            run_step()
 
 # 5. FOOTER
 st.sidebar.divider()
