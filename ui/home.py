@@ -1,71 +1,73 @@
 import streamlit as st
 
 def show_home():
-    st.title("🧪 Managers' Lab: Executive Insights")
+    st.title("🧪 Managers’ Lab — Executive Dashboard")
     st.markdown("---")
 
-    # 1. FETCH & CALCULATE
+    # 1. Υπολογισμοί από το Shared Core
     p = st.session_state.price
-    q = st.session_state.volume
+    v = st.session_state.volume
     vc = st.session_state.variable_cost
     fc = st.session_state.fixed_cost
     
-    rev = p * q
-    gross_profit = (p - vc) * q
-    net_profit = gross_profit - fc
-    margin_pct = (p - vc) / p if p > 0 else 0
+    revenue = p * v
+    unit_margin = p - vc
+    total_margin = unit_margin * v
+    net_profit = total_margin - fc
     
-    # Safety & Burn Rate
-    be_units = fc / (p - vc) if (p - vc) > 0 else 0
-    safety_margin = (q - be_units) / q if q > 0 else 0
-    daily_burn = fc / 365 # Σύμφωνα με τις οδηγίες σου για 365 ημέρες
+    # Break-even & Safety (Cold Analysis)
+    be_point = fc / unit_margin if unit_margin > 0 else 0
+    safety_margin = (v - be_point) / v if v > 0 else 0
+    daily_burn = fc / 365 # Σταθερά 365 ημέρες βάσει οδηγιών
 
-    # 2. THE DASHBOARD GRID
-    st.subheader("🏥 Enterprise Health Status")
-    m1, m2, m3, m4 = st.columns(4)
+    # 2. Executive Metrics
+    st.subheader("🏥 System Health Index")
+    col1, col2, col3 = st.columns(3)
     
-    with m1:
-        st.metric("Annual Revenue", f"{rev:,.0f} €")
-    with m2:
+    with col1:
         st.metric("Net Profit (EBIT)", f"{net_profit:,.0f} €", 
-                  delta=f"{(net_profit/rev*100) if rev > 0 else 0:.1f}% Net Margin")
-    with m3:
+                  delta=f"{(net_profit/revenue*100) if revenue > 0 else 0:.1f}% Margin")
+    
+    with col2:
+        # Cash Cycle calculation
+        ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
+        st.metric("Cash Conversion Cycle", f"{int(ccc)} Days")
+        
+    with col3:
         color = "normal" if safety_margin > 0.2 else "inverse"
         st.metric("Survival Buffer", f"{safety_margin:.1%}", delta="Safety Margin", delta_color=color)
-    with m4:
-        ccc = st.session_state.ar_days + st.session_state.inventory_days - st.session_state.payables_days
-        st.metric("Cash Conversion", f"{int(ccc)} Days")
 
     st.divider()
 
-    # 3. COLD ANALYSIS ALERTS
-    st.subheader("⚠️ Strategic Warnings")
+    # 3. Decision Alerts (Cold Insights)
+    st.subheader("⚠️ Critical Insights")
     c1, c2 = st.columns(2)
     
     with c1:
         if net_profit < 0:
-            st.error(f"**Action Required:** You are burning **{daily_burn:,.2f} € per day** in fixed costs without coverage. Your business model is currently value-destructive.")
+            st.error(f"**Structural Risk:** Your fixed costs of **{daily_burn:,.2f} €/day** are not covered. Immediate intervention in pricing or cost structure is required.")
         elif safety_margin < 0.15:
-            st.warning(f"**Fragility Alert:** A drop of more than {safety_margin:.1%} in volume will push the business into losses.")
+            st.warning("**High Sensitivity:** Your business is fragile. A 15% drop in volume will eliminate all profits.")
         else:
-            st.success("**Stability Confirmed:** Your current volume comfortably covers fixed costs and generates surplus.")
+            st.success("**Operational Strength:** Your current structure provides a solid cushion against market volatility.")
 
     with c2:
         if ccc > 90:
-            st.error("**Cash Trap:** Your Cash Conversion Cycle is too long. You are risking a liquidity crunch despite accounting profits.")
+            st.error("**Liquidity Warning:** Your capital is trapped for too long. Focus on 'Receivables' or 'Inventory' optimization.")
         else:
-            st.info("**Flow Efficiency:** Your collection and payment cycles are optimized for stability.")
+            st.info("**Flow Efficiency:** Your cash cycle is healthy, minimizing the need for external working capital financing.")
 
-    # 4. QUICK NAVIGATION BUTTONS
     st.divider()
-    st.markdown("### 🛠️ Decision Modules")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("📊 Re-calibrate Baseline (Stage 0)", use_container_width=True):
+    
+    # 4. Navigation
+    st.markdown("### 🛠️ Action Center")
+    n1, n2 = st.columns(2)
+    with n1:
+        if st.button("🔄 Re-calibrate Baseline (Stage 0)", use_container_width=True):
             st.session_state.mode = "path"
             st.session_state.flow_step = 0
             st.rerun()
-    with col_b:
-        if st.button("📚 Open Tool Library", use_container_width=True):
+    with n2:
+        if st.button("📚 Access Tool Library", use_container_width=True):
             st.session_state.mode = "library"
             st.rerun()
