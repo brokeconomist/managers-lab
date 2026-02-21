@@ -3,18 +3,21 @@ import pandas as pd
 
 def run_step():
     st.header("🏢 Stage 4: Sustainability & Structural Break-Even")
-    
+    st.info("Analyzing how fixed costs and inventory carrying costs affect your final net profit.")
+
     # 1. SYNC WITH PREVIOUS STAGES
     p = st.session_state.get('price', 0.0)
     vc = st.session_state.get('variable_cost', 0.0)
+    # Monthly volume from annual calibration
     q_monthly = st.session_state.get('volume', 0.0) / 12
     unit_margin = p - vc
     
-    # Τραβάμε το Liquidity Drain (κόστος αποθήκευσης/χρηματοδότησης) από το Stage 2
+    # Retrieval of the Liquidity Drain (Carrying Cost) calculated in Stage 2
+    # This represents the cost of capital tied up for longer than healthy periods.
     liquidity_drain_annual = st.session_state.get('liquidity_drain', 0.0)
     liquidity_drain_monthly = liquidity_drain_annual / 12
 
-    # 2. FIXED COSTS
+    # 2. FIXED COSTS INPUTS
     st.subheader("Monthly Operating Obligations")
     col1, col2 = st.columns(2)
     
@@ -26,12 +29,13 @@ def run_step():
         software = st.number_input("Software & Admin (€)", value=500.0)
         loan_payment = st.number_input("Monthly Loan Repayment (€)", value=1000.0)
 
-    # 3. CALCULATIONS
+    # 3. CALCULATIONS (Cold Analytical Logic)
     total_fixed_costs = rent + salaries + software
     ebit = (unit_margin * q_monthly) - total_fixed_costs
     
-    # Εδώ μπαίνει η δική σου προϋπόθεση: 
-    # Το Slow-moving stock δεν είναι "κενό" αλλά "έξοδο καθυστέρησης" (Carrying Cost)
+    # Net Profit Calculation
+    # We treat the slow-moving stock penalty as an operational expense (Carrying Cost)
+    # rather than a structural deficit.
     net_profit_before_drain = ebit - loan_payment
     final_net_profit = net_profit_before_drain - liquidity_drain_monthly
 
@@ -39,21 +43,36 @@ def run_step():
     st.divider()
     res1, res2, res3 = st.columns(3)
     
-    res1.metric("EBIT (Operating)", f"{ebit:,.2f} €")
+    with res1:
+        st.metric("EBIT (Operating)", f"{ebit:,.2f} €")
+        st.caption("Operational health before financial costs.")
+
+    with res2:
+        # This is your Slow-Moving Penalty
+        st.metric("Slow-Stock Penalty", f"-{liquidity_drain_monthly:,.2f} €", delta="Carrying Cost", delta_color="inverse")
+        st.caption("The cost of 'frozen' capital over time.")
     
-    # Εμφάνιση του κόστους δέσμευσης κεφαλαίου
-    res2.metric("Slow-Stock Penalty", f"-{liquidity_drain_monthly:,.2f} €", delta="Carrying Cost")
-    res2.caption("Το κόστος επειδή τα κεφάλαια αργούν να κινηθούν.")
+    with res3:
+        st.metric("Final Net Profit", f"{final_net_profit:,.2f} €")
+        st.caption("Actual cash remaining in your pocket.")
+
     
-    res3.metric("Final Net Profit", f"{final_net_profit:,.2f} €")
 
-    # 5. COLD INSIGHT
-    if liquidity_drain_monthly > (ebit * 0.1):
-        st.warning(f"⚠️ **Analytical Warning:** Το κόστος δέσμευσης των βραδέως κινούμενων αποθεμάτων απορροφά το { (liquidity_drain_monthly/ebit)*100:.1f}% της λειτουργικής σου κερδοφορίας.")
+    # 5. STRATEGIC SIGNAL
+    st.divider()
+    if liquidity_drain_monthly > (ebit * 0.15) and ebit > 0:
+        st.warning(f"⚠️ **Efficiency Risk:** Slow-moving inventory costs consume { (liquidity_drain_monthly/ebit)*100:.1f}% of your operating profit. Your capital is not 'leaking', but it is 'stagnating' significantly.")
+    elif ebit <= 0:
+        st.error("🔴 **Structural Deficit:** Your unit margin cannot cover even your basic fixed costs, regardless of inventory speed.")
 
-    st.info("Σημείωση: Το Slow-moving stock δεν υπολογίζεται ως έλλειμμα, αλλά ως λειτουργική επιβάρυνση λόγω του χρόνου δέσμευσης των κεφαλαίων.")
-
-    # NAVIGATION
-    if st.button("Final Strategy (Stage 5) ➡️"):
-        st.session_state.flow_step = 5
-        st.rerun()
+    # 6. NAVIGATION
+    st.divider()
+    nav1, nav2 = st.columns(2)
+    with nav1:
+        if st.button("⬅️ Back to Unit Economics"):
+            st.session_state.flow_step = 3
+            st.rerun()
+    with nav2:
+        if st.button("Proceed to Final Strategy (Stage 5) ➡️", type="primary"):
+            st.session_state.flow_step = 5
+            st.rerun()
