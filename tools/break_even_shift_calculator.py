@@ -5,9 +5,9 @@ def show_break_even_shift_calculator():
     st.caption("Stage 1: Establishing the Survival Anchor and Global Data.")
 
     # 1. INITIALIZE GLOBAL STATE (Αν δεν υπάρχουν ήδη, βάζουμε default τιμές)
-    if "global_units" not in st.session_state: st.session_state.global_units = 1000
+    if "global_units" not in st.session_state: st.session_state.global_units = 10000
     if "global_price" not in st.session_state: st.session_state.global_price = 20.0
-    if "global_vc" not in st.session_state: st.session_state.global_vc = 12.0
+    if "global_vc" not in st.session_state: st.session_state.global_vc = 15.0
     if "global_fc" not in st.session_state: st.session_state.global_fc = 5000.0
 
     st.info("💡 Data entered here will automatically populate other tools in the path.")
