@@ -2,7 +2,7 @@ import streamlit as st
 
 def run_step():
     st.header("⚙️ Stage 0: System Calibration")
-    st.caption("Define the structural economics of your business baseline.")
+    st.caption("Establish the core economic parameters of the enterprise.")
 
     col1, col2 = st.columns(2)
 
@@ -19,7 +19,6 @@ def run_step():
         st.session_state.variable_cost = st.number_input("Variable Cost per Unit (€)", min_value=0.0, value=float(st.session_state.variable_cost))
         st.session_state.fixed_cost = st.number_input("Annual Fixed Costs (€)", min_value=0.0, value=float(st.session_state.fixed_cost))
 
-        # Margin Calculation & Validation
         p = st.session_state.price
         vc = st.session_state.variable_cost
         margin = (p - vc) / p if p > 0 else 0
@@ -27,15 +26,17 @@ def run_step():
         if p <= 0:
             st.error("❌ Price must be greater than zero.")
         elif p <= vc:
-            st.error(f"❌ Critical: Negative Margin ({margin:.1%}). Value destruction in progress.")
+            st.error(f"❌ Critical: Negative/Zero Margin ({margin:.1%}). Value destruction in progress.")
         elif margin < 0.20:
-            st.warning(f"⚠️ Low structural buffer ({margin:.1%}). Highly sensitive model.")
+            st.warning(f"⚠️ Low structural buffer ({margin:.1%}). High sensitivity detected.")
         else:
             st.success(f"✅ Healthy Margin: {margin:.1%}")
 
     st.divider()
 
-    with st.expander("Cash Timing & Durability"):
+    st.subheader("⏳ Cash Timing & Durability")
+    with st.expander("Configure Working Capital Cycle", expanded=False):
+        st.caption("Standard industry defaults applied (45/60/30 days). Adjust for precision.")
         c1, c2, c3 = st.columns(3)
         st.session_state.ar_days = c1.number_input("Receivables Days", value=int(st.session_state.ar_days))
         st.session_state.inventory_days = c2.number_input("Inventory Days", value=int(st.session_state.inventory_days))
