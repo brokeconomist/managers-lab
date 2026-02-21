@@ -11,7 +11,7 @@ def initialize_system_state():
 
     # 1. Revenue Engine
     if 'price' not in st.session_state: st.session_state.price = 20.0
-    if 'volume' not in st.session_state: st.session_state.volume = 1000
+    if 'volume' not in st.session_state: st.session_state.volume = 10000
 
     # 2. Cost Structure
     if 'variable_cost' not in st.session_state: st.session_state.variable_cost = 12.0
