@@ -1,6 +1,6 @@
 import streamlit as st
 
-# 1. SETUP ΣΕΛΙΔΑΣ (Πάντα πρώτο)
+# 1. SETUP ΣΕΛΙΔΑΣ
 st.set_page_config(
     page_title="Managers' Lab",
     page_icon="🧪",
@@ -11,8 +11,7 @@ st.set_page_config(
 # 2. INITIALIZATION & SHARED CORE
 from core.system_state import initialize_system_state
 
-# ── FIX 6: Το initialize_system_state() πλέον ορίζει ΚΑΙ τα UI state keys (mode, flow_step, selected_tool)
-#    οπότε δεν χρειάζονται τα inline ifs εδώ ──
+# Αρχικοποίηση όλων των μεταβλητών (συμπεριλαμβανομένου του flow_step = 0)
 initialize_system_state()
 
 # 3. IMPORT & RENDER SIDEBAR
@@ -28,10 +27,16 @@ if mode == "home":
     show_home()
 
 elif mode == "path":
-    step = st.session_state.get("flow_step", 1)
+    step = st.session_state.get("flow_step", 0) # Ξεκινάμε από το 0
+    
+    # Ενημέρωση info για τον χρήστη (Stage 0 of 5)
     st.info(f"📍 Current Stage: {step} of 5")
 
-    if step == 1:
+    # ΔΙΑδρομή (Path)
+    if step == 0:
+        from path.step0_calibration import run_step
+        run_step()
+    elif step == 1:
         from path.step1_survival import run_step
         run_step()
     elif step == 2:
