@@ -10,11 +10,11 @@ def initialize_system_state():
     if 'selected_tool' not in st.session_state: st.session_state.selected_tool = None
 
     # 1. Revenue Engine
-    if 'price' not in st.session_state: st.session_state.price = 20.0
+    if 'price' not in st.session_state: st.session_state.price = 30.0
     if 'volume' not in st.session_state: st.session_state.volume = 10000
 
     # 2. Cost Structure
-    if 'variable_cost' not in st.session_state: st.session_state.variable_cost = 12.0
+    if 'variable_cost' not in st.session_state: st.session_state.variable_cost = 15.0
     if 'fixed_cost' not in st.session_state: st.session_state.fixed_cost = 5000.0
 
     # 3. Time & Cash Pressure
