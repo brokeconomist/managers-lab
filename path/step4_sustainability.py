@@ -43,23 +43,32 @@ def run_step():
     current_vol = st.session_state.get('volume', 1000) / 12 # Monthly volume
     safety_margin = ((current_vol - be_units) / current_vol) * 100 if current_vol > 0 else -100
 
-    # 4. RESULTS
-    st.divider()
-    res1, res2, res3 = st.columns(3)
+    # --- 4. RESULTS (Clear & Analytical) ---
+st.divider()
+res1, res2 = st.columns(2)
+
+with res1:
+    st.metric("EBIT (Operating Profit)", f"{ebit:,.2f} €")
+    st.caption("Κέρδη από τη λειτουργία σου (Revenue - Expenses). Πριν πληρώσεις Τράπεζες και Εφορία.")
+
+with res2:
+    # Υπολογισμός Net Profit με σαφήνεια
+    tax_amount = (ebit * taxes_buffer / 100) if ebit > 0 else 0
+    net_profit = ebit - loan_payment - tax_amount
     
-    with res1:
-        st.metric("Break-Even Volume", f"{int(be_units)} Units / Mo")
-        st.caption("Units needed just to cover costs")
+    st.metric("Net Profit (Final)", f"{net_profit:,.2f} €", 
+              delta=f"-{loan_payment + tax_amount:,.2f} € (Obligations)", delta_color="inverse")
+    st.caption("Το καθαρό ποσό που μένει στην τσέπη σου αφού αφαιρεθούν Δάνεια και Φόροι.")
 
-    with res2:
-        st.metric("Daily Sales Target", f"{be_units/30:.1f} Units")
-        st.caption("Based on 30-day month")
-
-    with res3:
-        color = "normal" if safety_margin > 20 else "inverse"
-        st.metric("Safety Margin", f"{safety_margin:.1f}%", delta=f"{safety_margin:.1f}%", delta_color=color)
-        st.caption("Distance from the 'Danger Zone'")
-
+# Επεξηγηματικό Box για να μην υπάρχει σύγχυση
+with st.expander("🔍 Γιατί διαφέρουν αυτά τα δύο νούμερα;"):
+    st.write(f"""
+    1. **EBIT:** Δείχνει αν η επιχείρησή σου είναι κερδοφόρα ως 'δραστηριότητα'.
+    2. **Αφαιρέσεις:** Έχεις ορίσει **{loan_payment} €** για δάνεια και **{taxes_buffer}%** για φόρους.
+    3. **Net Profit:** Είναι το EBIT μείον αυτές τις υποχρεώσεις. Αν θες να ταυτίζονται, μηδένισε το Δάνειο και τον Φόρο στα inputs παραπάνω.
+    """)
+    
+    
     # 5. BREAK-EVEN VISUALIZATION
     st.divider()
     st.subheader("Profitability Threshold Analysis")
