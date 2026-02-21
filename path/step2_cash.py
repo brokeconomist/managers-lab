@@ -9,7 +9,7 @@ def run_step():
     vc = st.session_state.get('variable_cost', 12.0)
     price = st.session_state.get('price', 20.0)
     annual_cogs = q * vc 
-    days_in_year = 365
+    days_in_year = 365 # Following your instruction for 365 days
 
     st.write(f"**🔗 Global Baseline Linked:** Annual COGS: {annual_cogs:,.2f} €")
 
@@ -21,14 +21,20 @@ def run_step():
     with col1:
         st.subheader("📦 Inventory")
         inv_days = st.number_input("Inventory Days", min_value=0, value=st.session_state.get('inventory_days', 60))
-                
-        # Νέος "Cold" υπολογισμός (περιλαμβάνει το Dead Stock):
+        
+        # Υπολογισμός βασικής αξίας αποθέματος (ΠΡΕΠΕΙ ΝΑ ΓΙΝΕΙ ΕΔΩ)
+        base_inventory_value = (inv_days / days_in_year) * annual_cogs
+        
+        # Dead Stock Logic
         dead_stock_pct = st.slider("Dead Stock / Non-Moving (%)", 0, 50, 10)
-        carrying_cost_pct = 0.20 # 20% ετήσιο κόστος αποθήκευσης/χρηματοδότησης
-
-        effective_inventory_value = inventory_value * (1 + dead_stock_pct/100)
+        carrying_cost_pct = 0.20 # 20% annual cost for warehouse/finance
+        
+        # Effective value includes the dead stock weight
+        effective_inventory_value = base_inventory_value * (1 + dead_stock_pct/100)
         liquidity_drain = effective_inventory_value * carrying_cost_pct
-          
+        
+        st.caption(f"Storage/Finance Cost: {liquidity_drain:,.2f} €/year")
+
     with col2:
         st.subheader("💳 Receivables")
         ar_days = st.number_input("Accounts Receivable Days", min_value=0, value=st.session_state.get('ar_days', 45))
@@ -43,7 +49,8 @@ def run_step():
 
     # 3. CALCULATIONS
     ccc = inv_days + ar_days - ap_days
-    working_capital_req = inventory_value + ar_value - ap_value
+    # Working Capital Requirement now factors in the "clogged" cash of dead stock
+    working_capital_req = effective_inventory_value + ar_value - ap_value
 
     st.divider()
 
@@ -57,13 +64,12 @@ def run_step():
 
     with res2:
         st.metric("Liquidity Gap (€)", f"{working_capital_req:,.2f} €")
-        # Auto-save state
+        # Save to session state
         st.session_state.inventory_days = inv_days
         st.session_state.ar_days = ar_days
         st.session_state.payables_days = ap_days
         st.session_state.working_capital_req = working_capital_req
-
-    
+        st.session_state.liquidity_drain = liquidity_drain # Passing to future stages
 
     st.divider()
     
@@ -81,4 +87,4 @@ def run_step():
             st.rerun()
 
     # Cold Insight
-    st.info(f"**Cold Insight:** Every day you reduce the CCC, you 'release' approximately **{annual_cogs / days_in_year:,.2f} €** in cash.")
+    st.info(f"**Cold Insight:** Your Dead Stock is costing you **{liquidity_drain:,.2f} €** per year in 'hidden' costs. This is cash that could have been invested or used to pay debt.")
