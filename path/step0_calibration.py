@@ -12,12 +12,19 @@ def run_step():
         st.session_state.variable_cost = st.number_input("Variable Cost per Unit (€)", min_value=0.0, value=float(st.session_state.variable_cost))
         st.session_state.fixed_cost = st.number_input("Annual Fixed Costs (€)", min_value=0.0, value=float(st.session_state.fixed_cost))
 
-    # Structural Warning Logic
-    margin = (st.session_state.price - st.session_state.variable_cost) / st.session_state.price if st.session_state.price > 0 else 0
-    if 0 < margin < 0.20:
-        st.warning(f"⚠️ Low structural buffer detected ({margin:.1%}). The business model is highly sensitive to volume fluctuations.")
-    elif margin <= 0:
-        st.error("❌ Critical Error: Negative or Zero Margin. Value destruction in progress.")
+    # --- Logic Correction ---
+    p = st.session_state.price
+    vc = st.session_state.variable_cost
+    margin = (p - vc) / p if p > 0 else 0
+
+    if p <= 0:
+        st.error("❌ Price must be greater than zero to initialize system.")
+    elif p <= vc:
+        st.error(f"❌ Critical: Negative or Zero Margin ({margin:.1%}). Value destruction in progress.")
+    elif margin < 0.20:
+        st.warning(f"⚠️ Low structural buffer ({margin:.1%}). The model is highly sensitive to volume fluctuations.")
+    else:
+        st.success(f"✅ Healthy Structural Margin: {margin:.1%}")
 
     st.subheader("⏳ Cash Timing & Durability")
     c1, c2, c3 = st.columns(3)
@@ -28,10 +35,10 @@ def run_step():
     st.divider()
 
     if st.button("Lock Baseline & Continue ➡️", use_container_width=True, type="primary"):
-        if st.session_state.price > st.session_state.variable_cost:
+        if p > vc:
             st.session_state.baseline_locked = True
-            st.session_state.flow_step = 1 # Στέλνουμε τον χρήστη στο πρώτο βήμα της ανάλυσης
+            st.session_state.flow_step = 1 
             st.session_state.mode = "path"
             st.rerun()
         else:
-            st.error("Cannot lock baseline with invalid economic structure.")
+            st.error("Cannot lock baseline: Economic structure is non-viable.")
