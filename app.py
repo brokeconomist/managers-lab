@@ -16,9 +16,10 @@ initialize_system_state()
 from ui.sidebar import render_sidebar
 from ui.home import show_home
 
+# We render the sidebar first so it can update the session_state
 render_sidebar()
 
-# 4. ROUTING LOGIC
+# 4. ROUTING LOGIC (The "Brain" of the App)
 mode = st.session_state.get("mode", "home")
 
 if mode == "home":
@@ -28,13 +29,13 @@ elif mode == "path":
     step = st.session_state.get("flow_step", 0)
     
     if step == 0:
-        # Configuration phase - No progress indicator shown yet
         from path.step0_calibration import run_step
         run_step()
     else:
-        # Analysis phase - Showing progress from 1 to 5
+        # Progress indicator for Analysis stages
         st.info(f"📍 Analysis Stage: {step} of 5")
         
+        # Check which step file to import
         if step == 1:
             from path.step1_survival import run_step
             run_step()
@@ -54,6 +55,11 @@ elif mode == "path":
 elif mode == "library":
     from ui.library import show_library
     show_library()
+
+elif mode == "about":
+    # ΠΡΟΣΟΧΗ: Αυτό έλειπε και γι' αυτό "κόλλαγε" το κουμπί About
+    from ui.about import show_about
+    show_about()
 
 # 5. FOOTER
 st.sidebar.divider()
