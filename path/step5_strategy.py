@@ -2,101 +2,83 @@ import streamlit as st
 import pandas as pd
 
 def run_step():
-    st.header("🏁 Stage 5: Strategic Stress Test & Executive Summary")
-    st.info("The final diagnostic. Testing business resilience against market volatility.")
+    st.header("🏁 Stage 5: Strategic Stress Test & QSPM")
+    st.info("The final diagnostic. Testing business resilience and selecting the optimal strategy.")
 
-    # 1. DATA GATHERING (Dynamic Sync with Stage 0)
+    # 1. CORE DATA SYNC
     p = st.session_state.get('price', 0.0)
     vc = st.session_state.get('variable_cost', 0.0)
-    q = st.session_state.get('volume', 0.0)  # This is your Volume from Calibration
+    q = st.session_state.get('volume', 0.0)
     margin = p - vc
     
-    # Financial constants from Stage 4
-    fixed_costs = 7000.0 # Standard baseline if not saved
-    loan = 1000.0
-    total_monthly_burn = fixed_costs + loan
-
     st.subheader("🛠️ Model Stress Testing")
-    st.write(f"**Current Baseline:** {q} Units/Year at {p:,.2f} € price.")
-
-    # 2. STRESS TEST INPUTS
+    
+    # 2. STRESS TEST
     col1, col2 = st.columns(2)
     with col1:
-        drop_in_sales = st.slider("Drop in Sales Volume (%)", 0, 50, 20)
-        increase_in_vc = st.slider("Increase in Variable Costs (%)", 0, 30, 10)
+        drop_sales = st.slider("Drop in Sales Volume (%)", 0, 50, 20)
+        inc_costs = st.slider("Increase in Costs (%)", 0, 30, 10)
     
     with col2:
-        # Recalculating based on Stress
-        stressed_q = q * (1 - drop_in_sales/100)
-        stressed_vc = vc * (1 + increase_in_vc/100)
-        stressed_margin = p - stressed_vc
-        
-        # Annual View
-        stressed_annual_profit = (stressed_margin * stressed_q) - (total_monthly_burn * 12)
-        
-        st.metric("Stress-Tested Annual Profit", f"{stressed_annual_profit:,.2f} €", 
-                  delta=f"Impact: {stressed_annual_profit - ((margin * q) - (total_monthly_burn * 12)):,.2f} €", 
-                  delta_color="inverse")
+        stressed_q = q * (1 - drop_sales/100)
+        stressed_margin = p - (vc * (1 + inc_costs/100))
+        # Annual baseline (approx 8000€ monthly burn from Stage 4)
+        stressed_annual_profit = (stressed_margin * stressed_q) - (96000)
+        st.metric("Stress-Tested Profit", f"{stressed_annual_profit:,.2f} €", delta_color="inverse")
 
     st.divider()
 
-    # 3. EXECUTIVE SCORECARD
-    st.subheader("🏆 Executive Scorecard")
+    # 3. QSPM (Quantitative Strategic Planning Matrix)
+    st.subheader("🎯 QSPM: Strategic Selection")
+    st.write("Evaluate which move is mathematically superior based on your current health.")
+
+    # Simplified QSPM Data
+    factors = {
+        "Market Growth": 0.20,
+        "Competitive Rivalry": 0.15,
+        "Operating Margin": 0.30,
+        "Cash Liquidity": 0.20,
+        "Brand Equity": 0.15
+    }
+
+    # Scores for two strategies: A (Scale) vs B (Efficiency)
+    # If Margin/Health is low, Efficiency should score higher
+    health_score = st.session_state.get('health_score', 50) # Inferred from previous steps
     
-    score = 0
-    metrics = []
+    qspm_data = []
+    for factor, weight in factors.items():
+        # Logic: If health is low, Efficiency (B) gets higher attractiveness scores
+        att_a = 2 if health_score < 40 else 4  # Scaling Attractiveness
+        att_b = 4 if health_score < 40 else 2  # Efficiency Attractiveness
+        qspm_data.append({
+            "Key Factor": factor,
+            "Weight": weight,
+            "Scale (AS)": att_a,
+            "Scale (TAS)": weight * att_a,
+            "Efficiency (AS)": att_b,
+            "Efficiency (TAS)": weight * att_b
+        })
 
-    # Analysis Logic
-    if p > (vc * 1.5): 
-        score += 25
-        metrics.append("✅ Healthy Contribution Margin")
-    else: metrics.append("❌ Low Margin Structure")
+    df_qspm = pd.DataFrame(qspm_data)
+    st.table(df_qspm)
 
-    if st.session_state.get('inventory_days', 0) < 45: 
-        score += 25
-        metrics.append("✅ Efficient Cash Cycle")
-    else: metrics.append("❌ High Working Capital Pressure")
-
-    # Volume vs Break-even check
-    annual_be = (total_monthly_burn / margin * 12) if margin > 0 else 999999
-    if q > annual_be:
-        score += 25
-        metrics.append("✅ Operating Above Break-Even")
-    else: metrics.append("❌ Structural Deficit Detected")
-
-    # LTV/CAC check
-    if st.session_state.get('ltv_cac_ratio', 0) > 3:
-        score += 25
-        metrics.append("✅ Scalable Unit Economics")
-    else: metrics.append("❌ Customer Acquisition is Too Expensive")
-
-    # 4. FINAL RATING
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        st.metric("Business Health Score", f"{score}/100")
-        if score <= 25: st.error("CRITICAL RISK")
-        elif score <= 50: st.warning("FRAGILE")
-        elif score <= 75: st.info("STABLE")
-        else: st.success("ELITE")
-
-    with c2:
-        st.write("### Strategic Signals")
-        for m in metrics:
-            st.write(m)
+    total_a = df_qspm["Scale (TAS)"].sum()
+    total_b = df_qspm["Efficiency (TAS)"].sum()
 
     
 
+    c1, c2 = st.columns(2)
+    c1.metric("Strategy A: Scaling TAS", f"{total_a:.2f}")
+    c2.metric("Strategy B: Efficiency TAS", f"{total_b:.2f}")
+
+    # 4. FINAL VERDICT
     st.divider()
-
-    # 5. THE COLD ROADMAP
-    st.subheader("📍 The Cold Roadmap")
-    if score <= 25:
-        st.error("**URGENT:** Pivot or Liquidation Risk. Your fixed costs are suffocating your low volume. Immediate price hike or massive cost cutting required.")
-    elif score <= 50:
-        st.warning("**CAUTION:** Optimize the engine. Your unit economics are too thin to support growth. Fix the Churn and CAC before scaling.")
+    if total_b > total_a:
+        st.warning("⚖️ **Decision:** The QSPM suggests **Efficiency First**. Your structural risks are too high to justify aggressive scaling.")
     else:
-        st.success("**GO:** You have a sustainable model. Focus on increasing acquisition budget to capture market share.")
+        st.success("🚀 **Decision:** The QSPM suggests **Aggressive Scaling**. Your fundamentals are strong enough to capture market share.")
 
-    if st.button("🔄 Restart Analysis", use_container_width=True):
+    st.divider()
+    if st.button("🔄 Restart Lab Analysis"):
         st.session_state.flow_step = 0
         st.rerun()
