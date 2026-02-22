@@ -3,74 +3,83 @@ import pandas as pd
 
 def run_step():
     st.header("🏢 Stage 4: Sustainability & Structural Break-Even")
-    st.info("Analyzing how fixed costs and inventory carrying costs affect your final net profit.")
+    st.info("Annual analysis of fixed costs, debt, and inventory carrying costs.")
 
-    # 1. DYNAMIC SYNC WITH STAGE 0
-    # Fetching values directly from session_state
+    # 1. DYNAMIC SYNC WITH STAGE 0 & STAGE 2
+    # Fetching annual data to maintain consistency with Stage 1
     p = st.session_state.get('price', 100.0)
     vc = st.session_state.get('variable_cost', 60.0)
     q_annual = st.session_state.get('volume', 1000.0)
     
-    # Inventory penalty from Stage 2
+    # Inventory carrying cost (Annual) from Stage 2
     liquidity_drain_annual = st.session_state.get('liquidity_drain', 0.0)
-    liquidity_drain_monthly = liquidity_drain_annual / 12
     
-    # Monthly conversion
-    q_monthly = q_annual / 12
     unit_margin = p - vc
+    annual_revenue = p * q_annual
 
-    st.write(f"**🔗 Linked to Stage 0:** Annual Volume: {q_annual:,.0f} units | Current Monthly: {q_monthly:,.1f} units")
+    st.write(f"**🔗 Linked to Global Data:** Annual Volume: {q_annual:,.0f} units | Unit Margin: {unit_margin:,.2f} €")
 
-    # 2. FIXED COSTS INPUTS
-    st.subheader("Monthly Operating Obligations")
+    # 2. ANNUAL FIXED COSTS INPUTS
+    st.subheader("Annual Operating Obligations")
     col1, col2 = st.columns(2)
     with col1:
-        rent = st.number_input("Rent & Utilities (€)", value=1500.0)
-        salaries = st.number_input("Salaries & Insurance (€)", value=4500.0)
+        # We multiply by 12 if the user thinks in monthly terms, or input annual directly
+        annual_rent = st.number_input("Annual Rent & Utilities (€)", value=18000.0)
+        annual_salaries = st.number_input("Annual Salaries & Insurance (€)", value=54000.0)
     with col2:
-        loan_payment = st.number_input("Monthly Loan Repayment (€)", value=1000.0)
-        other_fixed = st.number_input("Other Admin Costs (€)", value=500.0)
+        annual_loan = st.number_input("Annual Debt Service (€)", value=12000.0)
+        annual_admin = st.number_input("Annual Admin & Software (€)", value=6000.0)
 
-    # 3. CALCULATIONS
-    total_monthly_fixed = rent + salaries + other_fixed
-    # Operating profit before inventory penalty
-    ebit = (unit_margin * q_monthly) - total_monthly_fixed
+    # 3. CALCULATIONS (All Annual)
+    total_fixed_costs = annual_rent + annual_salaries + annual_admin
+    ebit = (unit_margin * q_annual) - total_fixed_costs
     
-    # Break-Even must cover Fixed Costs + Loan Payments
-    total_obligations = total_monthly_fixed + loan_payment
+    # Total obligations include fixed costs + debt repayment
+    total_annual_obligations = total_fixed_costs + annual_loan
     
+    # Break-Even Point in Units (Annual)
     if unit_margin > 0:
-        be_units_monthly = total_obligations / unit_margin
+        be_units_annual = total_annual_obligations / unit_margin
     else:
-        be_units_monthly = 0
+        be_units_annual = 0
 
     # Final Net Profit after inventory "Slow-Stock Penalty"
-    final_net_profit = ebit - loan_payment - liquidity_drain_monthly
+    final_net_profit = ebit - annual_loan - liquidity_drain_annual
 
     # 4. RESULTS DISPLAY
     st.divider()
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Current Monthly", f"{q_monthly:,.1f} units")
-    c2.metric("Break-Even Needed", f"{be_units_monthly:,.1f} units")
-    c3.metric("Final Net Profit", f"{final_net_profit:,.2f} €", delta=f"-{liquidity_drain_monthly:,.2f} Stock Penalty")
+    res1, res2, res3 = st.columns(3)
+    
+    with res1:
+        st.metric("Annual BEP Units", f"{be_units_annual:,.0f}")
+        st.caption("Units needed to cover all costs")
+
+    with res2:
+        st.metric("Annual EBIT", f"{ebit:,.2f} €")
+        st.caption("Operating profit before debt")
+
+    with res3:
+        st.metric("Final Net Profit", f"{final_net_profit:,.2f} €", 
+                  delta=f"-{liquidity_drain_annual:,.2f} Stock Cost", delta_color="inverse")
+        st.caption("Bottom line after all costs")
 
     
 
-    # 5. STRATEGIC SIGNAL
+    # 5. STRATEGIC SIGNAL (Annual Logic)
     st.divider()
-    if q_monthly < be_units_monthly:
-        st.error(f"🔴 **Deficit:** You are underperforming by {be_units_monthly - q_monthly:,.1f} units/month to cover all obligations.")
+    if q_annual < be_units_annual:
+        st.error(f"🔴 **Survival Alert:** You are {be_units_annual - q_annual:,.0f} units below the annual break-even point.")
     else:
-        st.success(f"🟢 **Surplus:** You are {q_monthly - be_units_monthly:,.1f} units above the survival threshold.")
+        st.success(f"🟢 **Operational Surplus:** You are {q_annual - be_units_annual:,.0f} units above the annual survival threshold.")
 
-    if liquidity_drain_monthly > (ebit * 0.15) and ebit > 0:
-        st.warning(f"⚠️ **Efficiency Risk:** Slow-moving stock costs consume {(liquidity_drain_monthly/ebit)*100:.1f}% of operating profit.")
+    if liquidity_drain_annual > (ebit * 0.15) and ebit > 0:
+        st.warning(f"⚠️ **Efficiency Risk:** Slow-moving stock costs consume {(liquidity_drain_annual/ebit)*100:.1f}% of annual EBIT.")
 
     # 6. NAVIGATION
     st.divider()
     nav1, nav2 = st.columns(2)
     with nav1:
-        if st.button("⬅️ Back to Unit Economics"):
+        if st.button("⬅️ Back to Stage 3"):
             st.session_state.flow_step = 3
             st.rerun()
     with nav2:
